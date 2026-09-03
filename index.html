@@ -5,19 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Benefits Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy: #16233B;
-    --navy-soft: #1E304D;
-    --ivory: #FBF9F5;
-    --ink: #23262B;
-    --ink-soft: #6B7280;
-    --brass: #B8863F;
-    --brass-soft: #E7D3AC;
-    --line: #E4DFD3;
-    --red: #B4483C;
-    --stripe: #FAF3E3;
+    --navy: #262624;
+    --navy-soft: #34322E;
+    --ivory: #F9F8F4;
+    --ink: #3D3D3A;
+    --ink-soft: #87867E;
+    --brass: #C1633D;
+    --brass-soft: #F1DDCB;
+    --line: #E5E2D9;
+    --red: #BC4B3C;
+    --stripe: #F3F1EA;
+    --brass-dark: #A8532E;
   }
   *{box-sizing:border-box;}
   body{
@@ -27,12 +28,14 @@
     color:var(--ink);
     display:flex;
     min-height:100vh;
+    -webkit-font-smoothing:antialiased;
   }
   .sidebar{
     width:210px;
     flex-shrink:0;
-    background:var(--navy);
-    color:#D9DCE3;
+    background:var(--stripe);
+    border-right:1px solid var(--line);
+    color:var(--ink);
     padding:28px 16px;
     display:flex;
     flex-direction:column;
@@ -42,28 +45,29 @@
     height:100vh;
   }
   .brand{
-    font-family:'Fraunces', serif;
-    font-size:19px;
-    font-weight:500;
-    color:#fff;
-    letter-spacing:0.2px;
+    font-family:'Inter', sans-serif;
+    font-size:17px;
+    font-weight:700;
+    color:var(--ink);
+    letter-spacing:-0.2px;
     padding:0 4px 22px 4px;
   }
   .brand span{
     display:block;
     font-family:'Inter', sans-serif;
     font-size:11px;
-    color:#8C96A8;
-    margin-top:2px;
+    color:var(--ink-soft);
+    margin-top:3px;
     font-weight:400;
+    letter-spacing:0;
   }
   .nav-item{
     all:unset;
     cursor:pointer;
-    padding:11px 12px;
-    border-radius:7px;
-    font-size:15px;
-    color:#C6CCD9;
+    padding:10px 12px;
+    border-radius:9px;
+    font-size:14.5px;
+    color:var(--ink-soft);
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -71,26 +75,26 @@
     gap:8px;
   }
   .nav-item:hover{
-    background:var(--navy-soft);
-    color:#fff;
+    background:rgba(0,0,0,0.045);
+    color:var(--ink);
   }
   .nav-item.active{
     background:var(--brass);
-    color:#1B1300;
+    color:#fff;
     font-weight:500;
   }
   .nav-item .count{
     font-size:11px;
-    color:#7C87A0;
-    background:rgba(255,255,255,0.06);
+    color:var(--ink-soft);
+    background:rgba(0,0,0,0.05);
     padding:1px 7px;
     border-radius:100px;
     min-width:20px;
     text-align:center;
   }
   .nav-item.active .count{
-    color:#5C4520;
-    background:rgba(0,0,0,0.1);
+    color:#fff;
+    background:rgba(255,255,255,0.22);
   }
 
   main{
@@ -100,9 +104,10 @@
     width:100%;
   }
   h1{
-    font-family:'Fraunces', serif;
-    font-weight:500;
-    font-size:26px;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:24px;
+    letter-spacing:-0.3px;
     margin:0 0 4px 0;
   }
   .sub{
@@ -122,7 +127,7 @@
     cursor:pointer;
     border:1px solid var(--line);
     background:#fff;
-    border-radius:14px;
+    border-radius:16px;
     padding:26px 24px;
     display:flex;
     flex-direction:column;
@@ -132,7 +137,7 @@
   .box:hover{
     border-color:var(--brass);
     transform:translateY(-2px);
-    box-shadow:0 6px 18px rgba(22,35,59,0.08);
+    box-shadow:0 8px 20px rgba(38,38,36,0.07);
   }
   .box .box-top{
     display:flex;
@@ -140,10 +145,11 @@
     align-items:flex-start;
   }
   .box .box-count{
-    font-family:'Fraunces', serif;
-    font-size:26px;
-    font-weight:500;
+    font-family:'Inter', sans-serif;
+    font-size:25px;
+    font-weight:700;
     color:var(--navy);
+    letter-spacing:-0.4px;
   }
   .box .box-count-label{
     font-size:11px;
@@ -186,7 +192,7 @@
 
   .card{
     border:1px solid var(--line);
-    border-radius:10px;
+    border-radius:12px;
     padding:18px 20px;
     margin-bottom:12px;
     background:#fff;
@@ -195,7 +201,7 @@
   /* entry form (generic sections) */
   .entry-form{
     border:1px solid var(--line);
-    border-radius:10px;
+    border-radius:12px;
     padding:18px 20px;
     background:#fff;
     margin-bottom:22px;
@@ -222,7 +228,7 @@
     font-size:13.5px;
     padding:8px 10px;
     border:1px solid var(--line);
-    border-radius:6px;
+    border-radius:8px;
     background:var(--ivory);
     color:var(--ink);
   }
@@ -239,14 +245,15 @@
   button.primary{
     all:unset;
     cursor:pointer;
-    background:var(--navy);
+    background:var(--brass);
     color:#fff;
     font-size:13px;
-    font-weight:500;
-    padding:9px 16px;
-    border-radius:7px;
+    font-weight:600;
+    padding:9px 18px;
+    border-radius:8px;
+    transition:background 0.15s ease;
   }
-  button.primary:hover{ background:var(--navy-soft); }
+  button.primary:hover{ background:var(--brass-dark); }
 
   .list-head{
     display:flex;
@@ -255,10 +262,11 @@
     margin-bottom:10px;
   }
   .list-head h3{
-    font-family:'Fraunces', serif;
-    font-weight:500;
-    font-size:15px;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:14.5px;
     margin:0;
+    letter-spacing:-0.1px;
   }
   .clear-link{
     all:unset;
@@ -290,7 +298,8 @@
     font-weight:400;
   }
   .entry .value{
-    font-family:'Fraunces', serif;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
     color:var(--navy);
     font-size:13.5px;
   }
@@ -325,7 +334,7 @@
   /* --- table-style sections (e.g. 2026 Clients) --- */
   .table-scroll{
     border:1px solid var(--line);
-    border-radius:10px;
+    border-radius:12px;
     overflow-x:auto;
     background:#fff;
     margin-bottom:8px;
@@ -338,24 +347,24 @@
   }
   table.data-table th{
     text-align:left;
-    background:var(--navy);
-    color:#fff;
-    font-size:12px;
+    background:var(--stripe);
+    color:var(--ink);
+    font-size:11.5px;
     font-weight:600;
     padding:11px 12px;
     white-space:nowrap;
+    border-bottom:1px solid var(--line);
   }
   table.data-table td{
     padding:10px 12px;
     border-bottom:1px solid var(--line);
     white-space:nowrap;
   }
-  table.data-table tbody tr:nth-child(odd){ background:var(--stripe); }
   table.data-table tbody tr:hover{ background:var(--brass-soft); }
-  table.data-table td.num{ font-family:'Fraunces', serif; color:var(--navy); }
+  table.data-table td.num{ font-family:'Inter', sans-serif; font-weight:600; color:var(--navy); }
   table.data-table tfoot td{
     font-weight:700;
-    font-family:'Fraunces', serif;
+    font-family:'Inter', sans-serif;
     color:var(--navy);
     border-top:2px solid var(--navy);
     border-bottom:none;
@@ -375,14 +384,14 @@
     border-radius:100px;
     font-weight:500;
   }
-  .status-Issued{ background:#DCEEE0; color:#2A6B3D; }
-  .status-Pending{ background:#F5E7C6; color:#8A6417; }
-  .status-In\ Process{ background:#DCE6F5; color:#2A4E8A; }
-  .status-Declined{ background:#F3D9D6; color:#A03A2F; }
+  .status-Issued{ background:#DEEBDD; color:#3A6B44; }
+  .status-Pending{ background:#F6E9CE; color:#8F6A2E; }
+  .status-In\ Process{ background:#E1E6F0; color:#3F5480; }
+  .status-Declined{ background:#F4DBD5; color:#A54936; }
 
   .table-form{
     border:1px solid var(--line);
-    border-radius:10px;
+    border-radius:12px;
     padding:16px 18px;
     background:#fff;
     margin-bottom:16px;
@@ -398,7 +407,7 @@
   /* --- today badge (sidebar) --- */
   .today-badge{
     font-size:11px;
-    color:#8C96A8;
+    color:var(--ink-soft);
     padding:0 4px 18px 4px;
     margin-top:-8px;
     letter-spacing:0.2px;
@@ -407,11 +416,12 @@
   /* --- achievements / travel progress cards --- */
   .rewards-section{ margin-bottom:30px; }
   .rewards-section h2{
-    font-family:'Fraunces', serif;
-    font-weight:500;
-    font-size:16px;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:15.5px;
     margin:0 0 3px 0;
     color:var(--navy);
+    letter-spacing:-0.1px;
   }
   .rewards-section .rs-sub{
     font-size:12.5px;
@@ -425,13 +435,13 @@
   }
   .achv-card{
     border:1px solid var(--line);
-    border-radius:10px;
+    border-radius:12px;
     padding:14px 16px;
     background:#fff;
   }
   .achv-card.done{
     border-color:var(--brass);
-    background:linear-gradient(0deg,#fff,#FFFBF2);
+    background:linear-gradient(0deg,#fff,var(--brass-soft) 180%);
   }
   .achv-top{
     display:flex;
@@ -446,7 +456,8 @@
     color:var(--ink);
   }
   .achv-pct{
-    font-family:'Fraunces', serif;
+    font-family:'Inter', sans-serif;
+    font-weight:700;
     font-size:14px;
     color:var(--navy);
     flex-shrink:0;
@@ -475,7 +486,7 @@
     display:inline-block;
     font-size:10.5px;
     font-weight:600;
-    color:#8A6417;
+    color:var(--brass-dark);
     background:var(--brass-soft);
     border-radius:100px;
     padding:2px 9px;
@@ -488,7 +499,7 @@
   }
   .travel-card{
     border:1px solid var(--line);
-    border-radius:10px;
+    border-radius:12px;
     padding:14px 16px;
     background:#fff;
   }
@@ -520,8 +531,9 @@
     max-width:360px;
     background:#fff;
     border:1px solid var(--line);
-    border-radius:14px;
+    border-radius:16px;
     padding:32px 28px;
+    box-shadow:0 8px 24px rgba(38,38,36,0.05);
   }
   .login-box .brand{
     padding:0 0 22px 0;
@@ -547,14 +559,14 @@
     all:unset;
     cursor:pointer;
     font-size:12px;
-    color:#8C96A8;
+    color:var(--ink-soft);
     padding:8px 4px 0 4px;
     margin-top:auto;
   }
-  .signout-link:hover{ color:#fff; }
+  .signout-link:hover{ color:var(--brass); }
   .sidebar-user{
     font-size:11px;
-    color:#6C7690;
+    color:var(--ink-soft);
     padding:0 4px;
     word-break:break-all;
   }
