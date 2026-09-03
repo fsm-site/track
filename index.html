@@ -504,23 +504,185 @@
     font-weight:500;
   }
   .travel-card .deadline.past{ color:var(--ink-soft); }
+
+  /* --- auth / login screen --- */
+  #login-screen{
+    min-height:100vh;
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--ivory);
+  }
+  .login-box{
+    width:100%;
+    max-width:360px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:32px 28px;
+  }
+  .login-box .brand{
+    padding:0 0 22px 0;
+    color:var(--navy);
+  }
+  .login-box .brand span{ color:var(--ink-soft); }
+  .login-box label{ margin-top:12px; }
+  .login-box label:first-of-type{ margin-top:0; }
+  .login-error{
+    font-size:12.5px;
+    color:var(--red);
+    min-height:16px;
+    margin-top:10px;
+  }
+  .login-box button.primary{
+    width:100%;
+    text-align:center;
+    margin-top:16px;
+    padding:10px 16px;
+  }
+  #app-shell{ display:none; }
+  .signout-link{
+    all:unset;
+    cursor:pointer;
+    font-size:12px;
+    color:#8C96A8;
+    padding:8px 4px 0 4px;
+    margin-top:auto;
+  }
+  .signout-link:hover{ color:#fff; }
+  .sidebar-user{
+    font-size:11px;
+    color:#6C7690;
+    padding:0 4px;
+    word-break:break-all;
+  }
 </style>
 </head>
 <body>
 
-<div class="sidebar">
-  <div class="brand">Benefits<span>Employee dashboard</span></div>
-  <div class="today-badge" id="today-badge"></div>
-  <div id="group-nav"></div>
+<div id="login-screen">
+  <div class="login-box">
+    <div class="brand">Benefits<span>Employee dashboard</span></div>
+    <label for="login-email">Email</label>
+    <input id="login-email" type="email" autocomplete="username" placeholder="you@example.com">
+    <label for="login-password">Password</label>
+    <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••">
+    <div class="login-error" id="login-error"></div>
+    <button class="primary" id="login-submit">Sign in</button>
+  </div>
 </div>
 
-<main>
-  <h1 id="group-title">Pru</h1>
-  <div class="sub" id="group-sub">Tap a section to open it.</div>
+<div id="app-shell" style="display:flex; width:100%;">
+  <div class="sidebar" style="display:flex; flex-direction:column;">
+    <div class="brand">Benefits<span>Employee dashboard</span></div>
+    <div class="today-badge" id="today-badge"></div>
+    <div id="group-nav"></div>
+    <div class="sidebar-user" id="sidebar-user"></div>
+    <button class="signout-link" id="signout-btn">Sign out</button>
+  </div>
 
-  <div class="box-grid" id="box-grid"></div>
-  <div id="leaf-mount"></div>
-</main>
+  <main>
+    <h1 id="group-title">Pru</h1>
+    <div class="sub" id="group-sub">Tap a section to open it.</div>
+
+    <div class="box-grid" id="box-grid"></div>
+    <div id="leaf-mount"></div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc, setDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC9VjcOcgGLhKc65mRC0w9O-lPMzkuQhMM",
+    authDomain: "zethmasterlist.firebaseapp.com",
+    projectId: "zethmasterlist",
+    storageBucket: "zethmasterlist.firebasestorage.app",
+    messagingSenderId: "807721959686",
+    appId: "1:807721959686:web:36ab34d2be9c17836f5e87",
+    measurementId: "G-P7RRV8PQ6C"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  let hasInitedApp = false;
+
+  /* each dashboard "id" (e.g. pru-clients) is stored as one Firestore
+     document at users/{uid}/entries/{id}, holding { value: [...] } */
+  window.fbGetEntries = async function(id){
+    const uid = auth.currentUser && auth.currentUser.uid;
+    if(!uid) return [];
+    try{
+      const snap = await getDoc(doc(db, "users", uid, "entries", id));
+      if(!snap.exists()) return [];
+      return snap.data().value || [];
+    }catch(e){
+      console.error("fbGetEntries failed", e);
+      return [];
+    }
+  };
+  window.fbSaveEntries = async function(id, entries){
+    const uid = auth.currentUser && auth.currentUser.uid;
+    if(!uid) return false;
+    try{
+      await setDoc(doc(db, "users", uid, "entries", id), { value: entries });
+      return true;
+    }catch(e){
+      console.error("fbSaveEntries failed", e);
+      return false;
+    }
+  };
+
+  const loginScreen = document.getElementById('login-screen');
+  const appShell = document.getElementById('app-shell');
+  const loginError = document.getElementById('login-error');
+  const emailEl = document.getElementById('login-email');
+  const passwordEl = document.getElementById('login-password');
+
+  async function doSignIn(){
+    loginError.textContent = '';
+    const email = emailEl.value.trim();
+    const password = passwordEl.value;
+    if(!email || !password){
+      loginError.textContent = 'Enter your email and password.';
+      return;
+    }
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+    }catch(e){
+      loginError.textContent = 'Sign-in failed — check your email and password.';
+    }
+  }
+  document.getElementById('login-submit').addEventListener('click', doSignIn);
+  passwordEl.addEventListener('keydown', e => { if(e.key === 'Enter') doSignIn(); });
+  emailEl.addEventListener('keydown', e => { if(e.key === 'Enter') doSignIn(); });
+  document.getElementById('signout-btn').addEventListener('click', () => signOut(auth));
+
+  onAuthStateChanged(auth, (user) => {
+    if(user){
+      loginScreen.style.display = 'none';
+      appShell.style.display = 'flex';
+      const userLabel = document.getElementById('sidebar-user');
+      if(userLabel) userLabel.textContent = user.email || '';
+      if(!hasInitedApp){
+        hasInitedApp = true;
+        if(window.initApp) window.initApp();
+      }
+    }else{
+      appShell.style.display = 'none';
+      loginScreen.style.display = 'flex';
+      passwordEl.value = '';
+    }
+  });
+</script>
 
 <script>
 /* ---------- config ---------- */
@@ -631,23 +793,15 @@ const editState = {}; // leaf id -> index currently being edited, or null
 let activeGroup = GROUPS[0].id;
 let activeLeaf = null; // null = showing box grid for the active group
 
-/* ---------- storage helpers ---------- */
+/* ---------- storage helpers ----------
+   Backed by Firestore (see the type="module" script above), scoped to the
+   signed-in user's account, so data syncs across any browser or device you
+   log into. */
 async function getEntries(id){
-  try{
-    const res = await window.storage.get(id, false);
-    if(!res || !res.value) return [];
-    return JSON.parse(res.value);
-  }catch(e){
-    return [];
-  }
+  return await window.fbGetEntries(id);
 }
 async function saveEntries(id, entries){
-  try{
-    const res = await window.storage.set(id, JSON.stringify(entries), false);
-    return !!res;
-  }catch(e){
-    return false;
-  }
+  return await window.fbSaveEntries(id, entries);
 }
 
 /* ---------- sidebar (groups only) ---------- */
@@ -771,9 +925,10 @@ function buildTablePanel(item, groupLabel, config){
         </div>`;
     }
     if(col.type === 'currency'){
+      const hint = col.key === 'ape' ? ' <span style="font-weight:400; color:var(--ink-soft);">(auto)</span>' : '';
       return `
         <div>
-          <label>${col.label}</label>
+          <label>${col.label}${hint}</label>
           <input id="${item.id}-f-${col.key}" type="text" placeholder="0.00">
         </div>`;
     }
@@ -942,6 +1097,24 @@ async function renderRewardsPanel(){
   `;
 }
 
+/* -- Premium × Mode of Payment → APE, live in the add/edit client form --
+   Annual×1, Semi-Annual×2, Quarterly×4, Monthly×12 (reuses MODE_FREQ). */
+function setupApeAutoCalc(item, config){
+  const hasKeys = ['premium','mode','ape'].every(k => config.columns.some(c => c.key === k));
+  if(!hasKeys) return;
+  const premiumEl = document.getElementById(item.id + '-f-premium');
+  const modeEl = document.getElementById(item.id + '-f-mode');
+  const apeEl = document.getElementById(item.id + '-f-ape');
+  if(!premiumEl || !modeEl || !apeEl) return;
+  function recalc(){
+    const premium = parseCurrency(premiumEl.value);
+    const freq = MODE_FREQ[modeEl.value];
+    if(premium && freq) apeEl.value = (premium * freq).toFixed(2);
+  }
+  premiumEl.addEventListener('input', recalc);
+  modeEl.addEventListener('change', recalc);
+}
+
 GROUPS.forEach(g => {
   g.items.forEach(item => {
     const tableConfig = TABLE_LEAVES[item.id];
@@ -954,6 +1127,7 @@ GROUPS.forEach(g => {
       panel = buildGenericPanel(item, g.label);
     }
     leafMount.appendChild(panel);
+    if(tableConfig) setupApeAutoCalc(item, tableConfig);
   });
 });
 
@@ -1288,7 +1462,7 @@ function renderTodayBadge(){
   el.textContent = 'Today · ' + d.toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' });
 }
 
-(async function init(){
+window.initApp = async function initApp(){
   renderTodayBadge();
   renderGroupNav();
   renderBoxGrid();
@@ -1301,7 +1475,7 @@ function renderTodayBadge(){
   }
   await renderAllCounts();
   await renderRewardsPanel();
-})();
+};
 </script>
 
 </body>
