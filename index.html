@@ -96,7 +96,8 @@
   main{
     flex:1;
     padding:40px 48px;
-    max-width:980px;
+    max-width:1600px;
+    width:100%;
   }
   h1{
     font-family:'Fraunces', serif;
@@ -629,6 +630,7 @@
       return snap.data().value || [];
     }catch(e){
       console.error("fbGetEntries failed", e);
+      window.lastFbError = e.code || e.message;
       return [];
     }
   };
@@ -637,9 +639,11 @@
     if(!uid) return false;
     try{
       await setDoc(doc(db, "users", uid, "entries", id), { value: entries });
+      window.lastFbError = null;
       return true;
     }catch(e){
       console.error("fbSaveEntries failed", e);
+      window.lastFbError = e.code || e.message;
       return false;
     }
   };
@@ -976,7 +980,15 @@ function buildTablePanel(item, groupLabel, config){
 
     <div class="list-head">
       <h3>Entries</h3>
-      <button class="clear-link" onclick="clearEntries('${item.id}')">Clear all</button>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">
+          Sort by
+          <select id="${item.id}-sort" onchange="setSort('${item.id}', this.value)" style="width:auto; padding:6px 8px; font-size:12.5px;">
+            ${buildSortOptions(config)}
+          </select>
+        </label>
+        <button class="clear-link" onclick="clearEntries('${item.id}')">Clear all</button>
+      </div>
     </div>
     <div id="${item.id}-list"></div>
   `;
@@ -1216,6 +1228,19 @@ async function renderList(id){
 }
 
 /* ---------- rendering: structured table ---------- */
+const sortState = {};
+function setSort(id, value){
+  sortState[id] = value;
+  renderTable(id);
+}
+function buildSortOptions(config){
+  const opts = ['<option value="default">Date added</option>'];
+  if(config.columns.some(c => c.key === 'name')) opts.push('<option value="name-asc">Name (A\u2013Z)</option>');
+  if(config.columns.some(c => c.key === 'submitted')) opts.push('<option value="month-asc">Month submitted</option>');
+  if(config.columns.some(c => c.key === 'ape')) opts.push('<option value="ape-desc">Highest APE</option>');
+  return opts.join('');
+}
+
 async function renderTable(id){
   const config = TABLE_LEAVES[id];
   const entries = await getEntries(id);
@@ -1229,7 +1254,22 @@ async function renderTable(id){
     return;
   }
 
-  const sorted = [...entries].sort((a,b) => (a.ts||0) - (b.ts||0));
+  const sortMode = sortState[id] || 'default';
+  const sorted = [...entries].sort((a, b) => {
+    if(sortMode === 'name-asc'){
+      return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
+    }
+    if(sortMode === 'month-asc'){
+      return MONTHS.indexOf(a.submitted) - MONTHS.indexOf(b.submitted);
+    }
+    if(sortMode === 'ape-desc'){
+      return parseCurrency(b.ape) - parseCurrency(a.ape);
+    }
+    return (a.ts || 0) - (b.ts || 0);
+  });
+
+  const sortSelect = document.getElementById(id + '-sort');
+  if(sortSelect) sortSelect.value = sortMode;
 
   const headCells = config.columns.map(c => `<th>${c.label}</th>`).join('') + '<th></th>';
   const bodyRows = sorted.map(row => {
@@ -1371,7 +1411,7 @@ async function addEntry(id){
     setTimeout(() => { if(noteEl.textContent === 'Saved.' || noteEl.textContent === 'Changes saved.') noteEl.textContent = ''; }, 1800);
     if(editing != null) clearEditMode(id, 'Add entry');
   }else{
-    noteEl.textContent = 'Could not save — please try again.';
+    noteEl.textContent = 'Could not save' + (window.lastFbError ? ' — ' + window.lastFbError : ' — please try again.');
     noteEl.style.color = 'var(--red)';
   }
   renderList(id);
@@ -1427,7 +1467,7 @@ async function addTableRow(id){
     setTimeout(() => { if(noteEl.textContent === 'Saved.' || noteEl.textContent === 'Changes saved.') noteEl.textContent = ''; }, 1800);
     if(editing != null) clearEditMode(id, 'Add client');
   }else{
-    noteEl.textContent = 'Could not save — please try again.';
+    noteEl.textContent = 'Could not save' + (window.lastFbError ? ' — ' + window.lastFbError : ' — please try again.');
     noteEl.style.color = 'var(--red)';
   }
   renderList(id);
