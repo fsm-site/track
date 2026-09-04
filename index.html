@@ -141,20 +141,8 @@
   }
   .box .box-top{
     display:flex;
-    justify-content:space-between;
+    justify-content:flex-end;
     align-items:flex-start;
-  }
-  .box .box-count{
-    font-family:'Inter', sans-serif;
-    font-size:25px;
-    font-weight:700;
-    color:var(--navy);
-    letter-spacing:-0.4px;
-  }
-  .box .box-count-label{
-    font-size:11px;
-    color:var(--ink-soft);
-    margin-top:-4px;
   }
   .box .box-label{
     font-size:16.5px;
@@ -165,6 +153,66 @@
   .box .box-arrow{
     font-size:18px;
     color:var(--brass);
+  }
+
+  /* --- totals summary (shown big, above the client table) --- */
+  .totals-summary{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+    gap:14px;
+    margin-bottom:22px;
+  }
+  .totals-box{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 20px;
+    background:#fff;
+  }
+  .totals-box .tb-label{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    margin-bottom:6px;
+  }
+  .totals-box .tb-value{
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:24px;
+    color:var(--navy);
+    letter-spacing:-0.4px;
+  }
+
+  /* --- year countdown card (Rewards & Achievements) --- */
+  .year-countdown-card{
+    border:1px solid var(--brass);
+    border-radius:16px;
+    padding:22px 26px;
+    background:linear-gradient(135deg,#fff,var(--brass-soft) 220%);
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+  }
+  .year-countdown-card .yc-label{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--brass-dark);
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+  }
+  .year-countdown-card .yc-value{
+    font-family:'Inter', sans-serif;
+    font-weight:700;
+    font-size:30px;
+    color:var(--navy);
+    letter-spacing:-0.4px;
+    margin:4px 0 2px 0;
+  }
+  .year-countdown-card .yc-sub{
+    font-size:12px;
+    color:var(--ink-soft);
   }
 
   /* --- leaf detail view --- */
@@ -750,6 +798,13 @@ const GROUPS = [
     { id: "money-flow", label: "Monthly Flow" },
     { id: "money-ledger", label: "Ledger" },
   ]},
+  { id: "sites", label: "Sites", items: [
+    { id: "site-main",       label: "Main Site",       url: "https://insurancebyengrzeth.com/" },
+    { id: "site-proposal",   label: "Sample Proposal", url: "https://insurancebyengrzeth.com/sample-proposal" },
+    { id: "site-assessment", label: "Assessment",      url: "https://insurancebyengrzeth.com/assessment" },
+    { id: "site-booking",    label: "Booking",         url: "https://insurancebyengrzeth.com/booking" },
+    { id: "site-hmoquote",   label: "HMO Quote",       url: "https://hmoquote.vercel.app/" },
+  ]},
 ];
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -857,7 +912,7 @@ let activeLeaf = null; // null = showing box grid for the active group
 const entriesCache = {};
 function allLeafIds(){
   const ids = [];
-  GROUPS.forEach(g => g.items.forEach(item => ids.push(item.id)));
+  GROUPS.forEach(g => g.items.forEach(item => { if(!item.url) ids.push(item.id); }));
   return ids;
 }
 async function primeCache(){
@@ -896,19 +951,25 @@ const groupSub = document.getElementById('group-sub');
 function renderBoxGrid(){
   const group = GROUPS.find(g => g.id === activeGroup);
   groupTitle.textContent = group.label;
-  groupSub.textContent = 'Tap a section to open it.';
-  boxGrid.innerHTML = group.items.map(item => `
-    <button class="box" onclick="selectLeaf('${group.id}','${item.id}')">
-      <div class="box-top">
-        <div>
-          <div class="box-count" id="bcount-${item.id}">0</div>
-          <div class="box-count-label">entries</div>
+  groupSub.textContent = group.id === 'sites' ? 'Tap a link to open it in a new tab.' : 'Tap a section to open it.';
+  boxGrid.innerHTML = group.items.map(item => {
+    if(item.url){
+      return `
+        <a class="box" href="${item.url}" target="_blank" rel="noopener noreferrer">
+          <div class="box-top">
+            <div class="box-arrow">↗</div>
+          </div>
+          <div class="box-label">${item.label}</div>
+        </a>`;
+    }
+    return `
+      <button class="box" onclick="selectLeaf('${group.id}','${item.id}')">
+        <div class="box-top">
+          <div class="box-arrow">→</div>
         </div>
-        <div class="box-arrow">→</div>
-      </div>
-      <div class="box-label">${item.label}</div>
-    </button>
-  `).join('');
+        <div class="box-label">${item.label}</div>
+      </button>`;
+  }).join('');
 }
 
 /* ---------- leaf detail panels ---------- */
@@ -1022,6 +1083,8 @@ function buildTablePanel(item, groupLabel, config){
     <h1>${item.label}</h1>
     <div class="sub">${groupLabel}</div>
     ${legendHtml}
+
+    <div id="${item.id}-totals"></div>
 
     <div class="table-form">
       <div class="fields">${fieldInputs}</div>
@@ -1187,6 +1250,13 @@ async function renderRewardsPanel(){
 
   mount.innerHTML = `
     <div class="rewards-section">
+      <div class="year-countdown-card">
+        <div class="yc-label">Time left in 2026</div>
+        <div class="yc-value" id="year-countdown-value">—</div>
+        <div class="yc-sub">Countdown to Jan 1, 2027</div>
+      </div>
+    </div>
+    <div class="rewards-section">
       <h2>Achievement Ladder</h2>
       <div class="rs-sub">Based on total Issued APE across your 2026 Clients: <strong>${fmtCurrency(totalAPE)}</strong></div>
       <div class="achv-grid">${achvCards}</div>
@@ -1197,6 +1267,26 @@ async function renderRewardsPanel(){
       <div class="travel-grid">${travelCards}${mdrtCards}</div>
     </div>
   `;
+  startYearCountdown();
+}
+
+/* -- live countdown to Jan 1, 2027, shown at the top of Rewards & Achievements -- */
+let yearCountdownTimer = null;
+function startYearCountdown(){
+  if(yearCountdownTimer) clearInterval(yearCountdownTimer);
+  function tick(){
+    const el = document.getElementById('year-countdown-value');
+    if(!el){ clearInterval(yearCountdownTimer); yearCountdownTimer = null; return; }
+    const target = new Date(2027, 0, 1, 0, 0, 0);
+    const diff = Math.max(0, target - new Date());
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    el.textContent = `${days}d ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m ${String(seconds).padStart(2,'0')}s`;
+  }
+  tick();
+  yearCountdownTimer = setInterval(tick, 1000);
 }
 
 /* -- Premium × Mode of Payment → APE, live in the add/edit client form --
@@ -1219,6 +1309,7 @@ function setupApeAutoCalc(item, config){
 
 GROUPS.forEach(g => {
   g.items.forEach(item => {
+    if(item.url) return; // link-only items (Sites) have no leaf panel
     const tableConfig = TABLE_LEAVES[item.id];
     let panel;
     if(item.id === 'pru-rewards'){
@@ -1320,8 +1411,32 @@ async function renderTable(id){
   const config = TABLE_LEAVES[id];
   const entries = await getEntries(id);
   const listEl = document.getElementById(id + '-list');
+  const totalsEl = document.getElementById(id + '-totals');
   const bcount = document.getElementById('bcount-' + id);
   if(bcount) bcount.textContent = entries.length;
+
+  // Totals — computed regardless of entry count and shown big, above the table.
+  const totals = {};
+  config.totalKeys.forEach(k => totals[k] = 0);
+  entries.forEach(row => {
+    config.totalKeys.forEach(k => {
+      const col = config.columns.find(c => c.key === k);
+      totals[k] += (col && col.type === 'computed') ? col.compute(row) : parseCurrency(row[k]);
+    });
+  });
+  if(totalsEl){
+    totalsEl.innerHTML = `
+      <div class="totals-summary">
+        ${config.totalKeys.map(k => {
+          const col = config.columns.find(c => c.key === k);
+          return `
+            <div class="totals-box">
+              <div class="tb-label">Total ${col.label}</div>
+              <div class="tb-value">${fmtCurrency(totals[k])}</div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
 
   if(entries.length === 0){
     listEl.innerHTML = `<div class="empty">No entries yet — add your first client above.</div>`;
@@ -1365,28 +1480,11 @@ async function renderTable(id){
     return `<tr>${cells}<td><button class="row-del" onclick="editTableRow('${id}', ${idx})">Edit</button>&nbsp;&nbsp;<button class="row-del" onclick="deleteEntry('${id}', ${idx})">Remove</button></td></tr>`;
   }).join('');
 
-  const totals = {};
-  config.totalKeys.forEach(k => totals[k] = 0);
-  entries.forEach(row => {
-    config.totalKeys.forEach(k => {
-      const col = config.columns.find(c => c.key === k);
-      totals[k] += (col && col.type === 'computed') ? col.compute(row) : parseCurrency(row[k]);
-    });
-  });
-  const totalLabelSpan = config.columns.length - config.totalKeys.length;
-  const totalCells = config.columns.map((c, i) => {
-    if(config.totalKeys.includes(c.key)){
-      return `<td>${fmtCurrency(totals[c.key])}</td>`;
-    }
-    return i === 0 ? `<td colspan="${totalLabelSpan}">Total</td>` : '';
-  }).filter(x => x !== '').join('') + '<td></td>';
-
   listEl.innerHTML = `
     <div class="table-scroll">
       <table class="data-table">
         <thead><tr>${headCells}</tr></thead>
         <tbody>${bodyRows}</tbody>
-        <tfoot><tr>${totalCells}</tr></tfoot>
       </table>
     </div>
   `;
@@ -1402,18 +1500,23 @@ function idToGroup(leafId){
 async function renderGroupCount(groupId){
   if(!groupId) return;
   const group = GROUPS.find(g => g.id === groupId);
+  const el = document.getElementById('gcount-' + groupId);
+  if(group.id === 'sites'){
+    if(el) el.textContent = group.items.length;
+    return;
+  }
   let total = 0;
   for(const item of group.items){
     const entries = await getEntries(item.id);
     total += entries.length;
   }
-  const el = document.getElementById('gcount-' + groupId);
   if(el) el.textContent = total;
 }
 
 async function renderAllCounts(){
   for(const g of GROUPS){
     for(const item of g.items){
+      if(item.url) continue;
       const entries = await getEntries(item.id);
       const bcount = document.getElementById('bcount-' + item.id);
       if(bcount) bcount.textContent = entries.length;
@@ -1601,6 +1704,7 @@ window.initApp = async function initApp(){
   await seedIfEmpty();
   for(const g of GROUPS){
     for(const item of g.items){
+      if(item.url) continue;
       await renderList(item.id);
     }
   }
