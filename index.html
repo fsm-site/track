@@ -418,25 +418,25 @@
   .rewards-section h2{
     font-family:'Inter', sans-serif;
     font-weight:700;
-    font-size:15.5px;
-    margin:0 0 3px 0;
+    font-size:19px;
+    margin:0 0 4px 0;
     color:var(--navy);
     letter-spacing:-0.1px;
   }
   .rewards-section .rs-sub{
-    font-size:12.5px;
+    font-size:13.5px;
     color:var(--ink-soft);
-    margin-bottom:14px;
+    margin-bottom:18px;
   }
   .achv-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:12px;
+    gap:20px;
   }
   .achv-card{
     border:1px solid var(--line);
-    border-radius:12px;
-    padding:14px 16px;
+    border-radius:16px;
+    padding:26px 28px;
     background:#fff;
   }
   .achv-card.done{
@@ -447,30 +447,30 @@
     display:flex;
     justify-content:space-between;
     align-items:baseline;
-    gap:8px;
-    margin-bottom:2px;
+    gap:10px;
+    margin-bottom:4px;
   }
   .achv-name{
-    font-size:13.5px;
-    font-weight:600;
+    font-size:17px;
+    font-weight:700;
     color:var(--ink);
   }
   .achv-pct{
     font-family:'Inter', sans-serif;
     font-weight:700;
-    font-size:14px;
+    font-size:22px;
     color:var(--navy);
     flex-shrink:0;
   }
   .achv-card.done .achv-pct{ color:var(--brass); }
   .achv-sub{
-    font-size:11.5px;
+    font-size:13.5px;
     color:var(--ink-soft);
-    margin-bottom:8px;
+    margin-bottom:12px;
   }
   .achv-sub strong{ color:var(--ink); font-weight:600; }
   .progress-track{
-    height:7px;
+    height:11px;
     border-radius:100px;
     background:var(--stripe);
     overflow:hidden;
@@ -484,35 +484,51 @@
   .achv-card.done .progress-fill{ background:var(--brass); }
   .achv-badge{
     display:inline-block;
-    font-size:10.5px;
+    font-size:12.5px;
     font-weight:600;
     color:var(--brass-dark);
     background:var(--brass-soft);
     border-radius:100px;
-    padding:2px 9px;
-    margin-top:8px;
+    padding:4px 13px;
+    margin-top:12px;
   }
+  .togo-line{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px dashed var(--line);
+  }
+  .togo-line strong{
+    display:block;
+    color:var(--brass-dark);
+    font-size:18px;
+    font-weight:700;
+    margin-top:2px;
+  }
+  .achv-card.done .togo-line strong,
+  .travel-card.done .togo-line strong{ color:var(--brass); }
   .travel-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:12px;
+    gap:20px;
   }
   .travel-card{
     border:1px solid var(--line);
-    border-radius:12px;
-    padding:14px 16px;
+    border-radius:16px;
+    padding:26px 28px;
     background:#fff;
   }
-  .travel-card .achv-name{ font-size:13.5px; }
+  .travel-card .achv-name{ font-size:17px; }
   .travel-card .loc{
-    font-size:11.5px;
+    font-size:13px;
     color:var(--ink-soft);
-    margin-bottom:8px;
+    margin-bottom:10px;
   }
   .travel-card .deadline{
-    font-size:11px;
+    font-size:12.5px;
     color:var(--red);
-    margin-top:8px;
+    margin-top:12px;
     font-weight:500;
   }
   .travel-card .deadline.past{ color:var(--ink-soft); }
@@ -811,9 +827,13 @@ const ACHIEVEMENTS = [
   { key: "mdrt",     label: "Million Dollar Round Table (MDRT)",      threshold: 3518400 },
 ];
 const MDRT_THRESHOLD = 3518400;
+/* South Korea travel only counts APE from clients Issued within this window —
+   Jan–Jul 2026 production does not count toward this incentive. */
+const SKOREA_WINDOW_MONTHS = ["August","September","October","November"];
 const TRAVEL_INCENTIVES = [
-  { key: "skorea", label: "South Korea Travel", threshold: 1500000, deadline: "2026-11-30" },
+  { key: "skorea", label: "South Korea Travel", threshold: 1500000, deadline: "2026-11-30", windowLabel: "Counted Aug–Nov 2026 only" },
 ];
+/* MDRT Annual & Global meetings qualify on FYP (First Year Premium), not APE. */
 const MDRT_MEETINGS = [
   { key: "mdrt-annual", label: "MDRT Annual Meeting", loc: "Orlando, Florida, USA" },
   { key: "mdrt-global", label: "MDRT Global Meeting",  loc: "Singapore" },
@@ -827,12 +847,34 @@ let activeLeaf = null; // null = showing box grid for the active group
 /* ---------- storage helpers ----------
    Backed by Firestore (see the type="module" script above), scoped to the
    signed-in user's account, so data syncs across any browser or device you
-   log into. */
+   log into.
+
+   entriesCache holds every section's data in memory once it's been fetched.
+   primeCache() fetches ALL sections in one parallel batch on load (instead of
+   one Firestore round trip per section, done one after another) — this is
+   what used to make the dashboard take up to a minute to open. Everything
+   below reads from the cache and only re-hits Firestore when data changes. */
+const entriesCache = {};
+function allLeafIds(){
+  const ids = [];
+  GROUPS.forEach(g => g.items.forEach(item => ids.push(item.id)));
+  return ids;
+}
+async function primeCache(){
+  const ids = allLeafIds();
+  const results = await Promise.all(ids.map(id => window.fbGetEntries(id)));
+  ids.forEach((id, i) => { entriesCache[id] = results[i]; });
+}
 async function getEntries(id){
-  return await window.fbGetEntries(id);
+  if(entriesCache[id]) return entriesCache[id];
+  const entries = await window.fbGetEntries(id);
+  entriesCache[id] = entries;
+  return entries;
 }
 async function saveEntries(id, entries){
-  return await window.fbSaveEntries(id, entries);
+  const ok = await window.fbSaveEntries(id, entries);
+  if(ok) entriesCache[id] = entries;
+  return ok;
 }
 
 /* ---------- sidebar (groups only) ---------- */
@@ -1060,13 +1102,28 @@ function progressPct(current, threshold){
   return Math.max(0, Math.min(100, (current / threshold) * 100));
 }
 
+function togoLine(remaining, done, doneLabel){
+  return done
+    ? `<div class="togo-line">To-Go<strong>${doneLabel || 'Achieved 🎉'}</strong></div>`
+    : `<div class="togo-line">To-Go<strong>${fmtCurrency(remaining)}</strong></div>`;
+}
+
 async function renderRewardsPanel(){
   const mount = document.getElementById('rewards-mount');
   if(!mount) return; // panel not built yet
   const clients = await getEntries('pru-clients');
-  const totalAPE = clients
-    .filter(r => r.status === 'Issued')
+  const issued = clients.filter(r => r.status === 'Issued');
+
+  // Achievement Ladder still runs on total Issued APE (all months).
+  const totalAPE = issued.reduce((sum, r) => sum + parseCurrency(r.ape), 0);
+
+  // South Korea Travel only counts APE from clients Issued Aug–Nov 2026.
+  const skoreaAPE = issued
+    .filter(r => SKOREA_WINDOW_MONTHS.includes(r.submitted))
     .reduce((sum, r) => sum + parseCurrency(r.ape), 0);
+
+  // MDRT Annual/Global meetings qualify on FYP, not APE.
+  const totalFYP = issued.reduce((sum, r) => sum + computeFYP(r), 0);
 
   const achvCards = ACHIEVEMENTS.map(a => {
     const pct = progressPct(totalAPE, a.threshold);
@@ -1080,15 +1137,17 @@ async function renderRewardsPanel(){
         </div>
         <div class="achv-sub"><strong>${fmtCurrency(totalAPE)}</strong> of ${fmtCurrency(a.threshold)} APE</div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-        ${done ? `<div class="achv-badge">Achieved</div>` : `<div class="achv-sub" style="margin:8px 0 0 0;">${fmtCurrency(remaining)} to go</div>`}
+        ${done ? `<div class="achv-badge">Achieved</div>` : ''}
+        ${togoLine(remaining, done)}
       </div>`;
   }).join('');
 
   const today = new Date();
   const travelCards = TRAVEL_INCENTIVES.map(t => {
-    const pct = progressPct(totalAPE, t.threshold);
+    const value = t.key === 'skorea' ? skoreaAPE : totalAPE;
+    const pct = progressPct(value, t.threshold);
     const done = pct >= 100;
-    const remaining = Math.max(0, t.threshold - totalAPE);
+    const remaining = Math.max(0, t.threshold - value);
     const deadline = new Date(t.deadline + 'T00:00:00');
     const msLeft = deadline - today;
     const daysLeft = Math.ceil(msLeft / 86400000);
@@ -1101,15 +1160,18 @@ async function renderRewardsPanel(){
           <div class="achv-name">${t.label}</div>
           <div class="achv-pct">${pct.toFixed(0)}%</div>
         </div>
-        <div class="achv-sub"><strong>${fmtCurrency(totalAPE)}</strong> of ${fmtCurrency(t.threshold)} APE</div>
+        ${t.windowLabel ? `<div class="loc">${t.windowLabel}</div>` : ''}
+        <div class="achv-sub"><strong>${fmtCurrency(value)}</strong> of ${fmtCurrency(t.threshold)} APE</div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-        ${done ? `<div class="achv-badge">Qualified</div>` : `<div class="achv-sub" style="margin:8px 0 0 0;">${fmtCurrency(remaining)} to go</div>`}
+        ${done ? `<div class="achv-badge">Qualified</div>` : ''}
+        ${togoLine(remaining, done)}
         <div class="deadline ${daysLeft < 0 ? 'past' : ''}">${deadlineLabel}</div>
       </div>`;
   }).join('');
 
-  const mdrtPct = progressPct(totalAPE, MDRT_THRESHOLD);
+  const mdrtPct = progressPct(totalFYP, MDRT_THRESHOLD);
   const mdrtDone = mdrtPct >= 100;
+  const mdrtRemaining = Math.max(0, MDRT_THRESHOLD - totalFYP);
   const mdrtCards = MDRT_MEETINGS.map(m => `
     <div class="travel-card ${mdrtDone ? 'achv-card done' : ''}">
       <div class="achv-top">
@@ -1117,9 +1179,10 @@ async function renderRewardsPanel(){
         <div class="achv-pct">${mdrtPct.toFixed(0)}%</div>
       </div>
       <div class="loc">${m.loc}</div>
-      <div class="achv-sub"><strong>${fmtCurrency(totalAPE)}</strong> of ${fmtCurrency(MDRT_THRESHOLD)} APE (MDRT qualification)</div>
+      <div class="achv-sub"><strong>${fmtCurrency(totalFYP)}</strong> of ${fmtCurrency(MDRT_THRESHOLD)} FYP (MDRT qualification)</div>
       <div class="progress-track"><div class="progress-fill" style="width:${mdrtPct}%"></div></div>
-      ${mdrtDone ? `<div class="achv-badge">Qualified</div>` : `<div class="achv-sub" style="margin:8px 0 0 0;">${fmtCurrency(Math.max(0, MDRT_THRESHOLD - totalAPE))} to go</div>`}
+      ${mdrtDone ? `<div class="achv-badge">Qualified</div>` : ''}
+      ${togoLine(mdrtRemaining, mdrtDone)}
     </div>`).join('');
 
   mount.innerHTML = `
@@ -1130,7 +1193,7 @@ async function renderRewardsPanel(){
     </div>
     <div class="rewards-section">
       <h2>Travel Incentives</h2>
-      <div class="rs-sub">Qualifying trips and MDRT meetings tied to your 2026 APE production</div>
+      <div class="rs-sub">South Korea Travel counts Issued APE from Aug–Nov 2026 only · MDRT meetings qualify on FYP</div>
       <div class="travel-grid">${travelCards}${mdrtCards}</div>
     </div>
   `;
@@ -1534,6 +1597,7 @@ window.initApp = async function initApp(){
   renderGroupNav();
   renderBoxGrid();
   renderView();
+  await primeCache();
   await seedIfEmpty();
   for(const g of GROUPS){
     for(const item of g.items){
