@@ -654,10 +654,21 @@
   .travel-card .deadline.past{ color:var(--ink-soft); }
 
   /* --- auth / login screen --- */
-  #login-screen{
+  #auth-loading{
     min-height:100vh;
     width:100%;
     display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--ivory);
+    color:var(--ink-soft);
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+  }
+  #login-screen{
+    min-height:100vh;
+    width:100%;
+    display:none;
     align-items:center;
     justify-content:center;
     background:var(--ivory);
@@ -856,6 +867,8 @@
 </head>
 <body>
 
+<div id="auth-loading">Loading…</div>
+
 <div id="login-screen">
   <div class="login-box">
     <div class="brand">Bam<span>Personal dashboard</span></div>
@@ -900,7 +913,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+    setPersistence, browserSessionPersistence
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
     getFirestore, doc, getDoc, setDoc
@@ -920,6 +934,14 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
   let hasInitedApp = false;
+
+  // Session persistence: signed-in state survives a page refresh (it lives
+  // in sessionStorage for this tab) but is cleared as soon as the tab or
+  // window is closed, so closing and reopening always asks for sign-in
+  // again. Set this before anything else touches auth.
+  const authReady = setPersistence(auth, browserSessionPersistence).catch(e => {
+    console.error('setPersistence failed', e);
+  });
 
   /* each dashboard "id" (e.g. pru-clients) is stored as one Firestore
      document at users/{uid}/entries/{id}, holding { value: [...] } */
@@ -950,6 +972,7 @@
     }
   };
 
+  const authLoading = document.getElementById('auth-loading');
   const loginScreen = document.getElementById('login-screen');
   const appShell = document.getElementById('app-shell');
   const loginError = document.getElementById('login-error');
@@ -973,6 +996,7 @@
       return;
     }
     try{
+      await authReady;
       await signInWithEmailAndPassword(auth, email, password);
     }catch(e){
       console.error('Firebase sign-in error:', e.code, e.message);
@@ -988,6 +1012,7 @@
   document.getElementById('signout-btn').addEventListener('click', () => signOut(auth));
 
   onAuthStateChanged(auth, (user) => {
+    authLoading.style.display = 'none';
     if(user){
       loginScreen.style.display = 'none';
       appShell.style.display = 'flex';
