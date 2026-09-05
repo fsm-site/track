@@ -2516,6 +2516,15 @@ function showDeleteError(id, message){
   }
 }
 
+// Mirrors the key each side stamps on itself during sync, so delete can
+// reliably find the linked record on the other side instead of guessing.
+function clientOwnKey(client){
+  return client.ts || `${client.name}|${client.submitted || ''}`;
+}
+function servicingOriginKey(service){
+  return service.sourceClientKey || service.sourceLeadKey || `servicing:${service.ts || `${service.name}|${service.issuedDate || ''}`}`;
+}
+
 async function deleteEntry(id, idx){
   const entries = await getEntries(id);
   const record = entries[idx];
@@ -2523,11 +2532,23 @@ async function deleteEntry(id, idx){
   const linked = [];
   if(id === 'pru-clients'){
     const servicing = await getEntries('pru-servicing');
-    const match = servicing.filter(item => item.sourceClientKey === (record.ts || '') || item.name === record.name);
+    const key = clientOwnKey(record);
+    const match = servicing.filter(item =>
+      item.sourceClientKey === key ||
+      (!item.sourceClientKey && item.name === record.name && (item.issuedDate || item.submitted || '') === (record.submitted || ''))
+    );
     match.forEach(item => linked.push({ sectionId:'pru-servicing', record:item }));
   }else if(id === 'pru-servicing'){
     const clients = await getEntries('pru-clients');
-    const match = clients.filter(item => item.sourceServicingKey === (record.sourceClientKey || '') || item.ts === record.ts || item.name === record.name);
+    // A servicing row's linked client is either the client it was originally
+    // synced FROM (client.ts === record.sourceClientKey), or — if this
+    // servicing row was added directly and later synced INTO clients — the
+    // client whose sourceServicingKey points back at this row's origin key.
+    const match = clients.filter(item =>
+      (record.sourceClientKey && item.ts === record.sourceClientKey) ||
+      item.sourceServicingKey === servicingOriginKey(record) ||
+      item.name === record.name
+    );
     match.forEach(item => linked.push({ sectionId:'pru-clients', record:item }));
   }
 
