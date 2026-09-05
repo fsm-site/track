@@ -505,6 +505,7 @@
     font-weight:500;
   }
   .status-Issued{ background:#DEEBDD; color:#3A6B44; }
+  .status-Lapsed{ background:#DEEBDD; color:#3A6B44; }
   .status-Pending{ background:#F6E9CE; color:#8F6A2E; }
   .status-In\ Process{ background:#E1E6F0; color:#3F5480; }
   .status-Declined{ background:#F4DBD5; color:#A54936; }
@@ -788,6 +789,7 @@
   table.data-table th{background:#f0f4f1; color:var(--navy);}
   table.data-table tbody tr:hover{background:#fff7f3;}
   .status-Issued{background:var(--mint); color:#2f684b;}
+  .status-Lapsed{background:var(--mint); color:#2f684b;}
   .status-Pending{background:#fff0d5; color:#906624;}
   .rewards-section h2{color:var(--navy);}
   .achv-card.done{background:linear-gradient(0deg,#fff,var(--brass-soft) 180%);}
@@ -1113,7 +1115,7 @@ const TABLE_LEAVES = {
     columns: [
       { key: "name",      label: "Client's Name", type: "text",   placeholder: "Last, First" },
       { key: "submitted", label: "Issued Date",    type: "date" },
-      { key: "status",    label: "Status",         type: "select", options: ["Issued","Pending","In Process","Declined"] },
+      { key: "status",    label: "Status",         type: "select", options: ["Issued","Lapsed", "Pending","In Process","Declined"] },
       { key: "clientType", label: "Client Type", type: "select", options: ["Own","Adopted"] },
       { key: "plan",      label: "Plan",           type: "select", options: PLAN_OPTIONS },
       { key: "mode",      label: "Mode of Payment",type: "select", options: MODE_OPTIONS },
