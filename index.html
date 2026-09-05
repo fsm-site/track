@@ -2503,6 +2503,19 @@ async function editTableRow(id, idx){
   document.getElementById(id + '-f-' + config.columns[0].key).scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+function showDeleteError(id, message){
+  // Table/lead/servicing views don't render a form, so fall back to a
+  // transient alert when there's no savenote element to write into.
+  const noteEl = document.getElementById(id + '-savenote');
+  if(noteEl){
+    noteEl.textContent = message;
+    noteEl.style.color = 'var(--red)';
+    setTimeout(() => { if(noteEl.textContent === message) noteEl.textContent = ''; }, 4000);
+  }else{
+    alert(message);
+  }
+}
+
 async function deleteEntry(id, idx){
   const entries = await getEntries(id);
   const record = entries[idx];
@@ -2517,24 +2530,72 @@ async function deleteEntry(id, idx){
     const match = clients.filter(item => item.sourceServicingKey === (record.sourceClientKey || '') || item.ts === record.ts || item.name === record.name);
     match.forEach(item => linked.push({ sectionId:'pru-clients', record:item }));
   }
+
+  // 1. Copy to Trash first. If this write fails, stop — nothing has been
+  //    removed from the live lists yet, so there's nothing to roll back.
   const archived = await archiveTrash(id, [record], linked);
-  if(!archived) return;
+  if(!archived){
+    showDeleteError(id, 'Could not remove' + (window.lastFbError ? ' — ' + window.lastFbError : ' — please try again.'));
+    return;
+  }
+
+  // 2. Remove the record from its own section. If this write fails, undo
+  //    the trash copy so we don't end up with a duplicate sitting there
+  //    while the "live" record is still visible everywhere.
   entries.splice(idx, 1);
-  await saveEntries(id, entries);
+  const savedMain = await saveEntries(id, entries);
+  if(!savedMain){
+    await removeFromTrashByRecord(id, record);
+    showDeleteError(id, 'Could not remove' + (window.lastFbError ? ' — ' + window.lastFbError : ' — please try again.'));
+    await renderList(id);
+    return;
+  }
+
+  // 3. Remove any linked record (client <-> servicing) from its section.
+  //    If one of these fails, surface it but keep the primary delete —
+  //    the trash copy still exists so nothing is lost, and refreshing
+  //    will re-sync clients/servicing from whichever side saved.
+  let linkedFailed = false;
   for(const item of linked){
     const other = await getEntries(item.sectionId);
     const otherIndex = other.indexOf(item.record);
-    if(otherIndex >= 0){ other.splice(otherIndex, 1); await saveEntries(item.sectionId, other); }
+    if(otherIndex >= 0){
+      other.splice(otherIndex, 1);
+      const savedLinked = await saveEntries(item.sectionId, other);
+      if(!savedLinked) linkedFailed = true;
+    }
   }
+
   await Promise.all(['pru-clients','pru-servicing'].filter(sectionId => sectionId !== id).map(sectionId => renderList(sectionId)));
   await refreshAfterClientChange(id);
+
+  if(linkedFailed){
+    showDeleteError(id, 'Removed, but a linked record could not be updated' + (window.lastFbError ? ' — ' + window.lastFbError : '.'));
+  }
+}
+
+async function removeFromTrashByRecord(sectionId, record){
+  const trash = await getEntries('__trash__');
+  const index = trash.findIndex(item => item.sectionId === sectionId && item.record === record);
+  if(index >= 0){
+    trash.splice(index, 1);
+    await saveEntries('__trash__', trash);
+  }
 }
 
 async function clearEntries(id){
   if(!confirm('Remove all entries in this section? This cannot be undone.')) return;
   const entries = await getEntries(id);
   if(!(await archiveTrash(id, entries))) return;
-  await saveEntries(id, []);
+  const ok = await saveEntries(id, []);
+  if(!ok){
+    // Undo the trash copy so a failed clear doesn't leave duplicates behind.
+    const trash = await getEntries('__trash__');
+    const remaining = trash.filter(item => !(item.sectionId === id && entries.includes(item.record)));
+    await saveEntries('__trash__', remaining);
+    showDeleteError(id, 'Could not clear entries' + (window.lastFbError ? ' — ' + window.lastFbError : ' — please try again.'));
+    return;
+  }
   await refreshAfterClientChange(id);
 }
 
