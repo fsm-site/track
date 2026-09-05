@@ -1117,6 +1117,7 @@ const TABLE_LEAVES = {
       { key: "submitted", label: "Issued Date",    type: "date" },
       { key: "status",    label: "Status",         type: "select", options: ["Issued","Lapsed", "Pending","In Process","Declined"] },
       { key: "clientType", label: "Client Type", type: "select", options: ["Own","Adopted"] },
+      { key: "policyNumber",      label: "Policy Number", type: "text" },
       { key: "plan",      label: "Plan",           type: "select", options: PLAN_OPTIONS },
       { key: "mode",      label: "Mode of Payment",type: "select", options: MODE_OPTIONS },
       { key: "premium",   label: "Premium",        type: "currency" },
@@ -1515,6 +1516,7 @@ function buildServicingPanel(item, groupLabel){
     <div class="table-form">
       <div class="fields">
         <div><label>Client Name</label><input id="${item.id}-f-name" type="text" placeholder="Last, First"></div>
+          <div><label>Policy Number</label><input id="${item.id}-f-policyNumber" type="text" placeholder="Last, First"></div>
         <div><label>Issued Date</label><input id="${item.id}-f-issuedDate" type="date"></div>
         <div><label>Client Type</label><select id="${item.id}-f-servicingType"><option value="Own">Own</option><option value="Adopted">Adopted</option></select></div>
         <div><label>Contact Link</label><input id="${item.id}-f-contactLink" type="url" placeholder="https://..."></div>
