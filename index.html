@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Benefits Dashboard</title>
+<title>Bam's Masterlist</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --navy: #262624;
@@ -213,6 +213,78 @@
   .year-countdown-card .yc-sub{
     font-size:12px;
     color:var(--ink-soft);
+  }
+  .client-fyp-modal{
+    position:fixed;
+    inset:0;
+    z-index:20;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(23,35,49,.48);
+  }
+  .client-fyp-modal.open{display:flex;}
+  .client-fyp-dialog{
+    width:min(760px,100%);
+    max-height:min(720px,90vh);
+    overflow:auto;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:0 24px 70px rgba(23,35,49,.22);
+    padding:24px;
+  }
+  .client-fyp-head{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;}
+  .client-fyp-head h2{margin:0; color:var(--navy); font-size:21px;}
+  .client-fyp-head p{margin:5px 0 0; color:var(--ink-soft); font-size:12.5px;}
+  .client-fyp-close{all:unset; cursor:pointer; color:var(--ink-soft); font-size:24px; line-height:1; padding:2px 6px;}
+  .client-fyp-close:hover{color:var(--brass);}
+  .client-fyp-table{width:100%; border-collapse:collapse; font-size:13px;}
+  .client-fyp-table th{background:#f0f4f1; color:var(--navy); text-align:left; font-size:11px; padding:10px;}
+  .client-fyp-table td{border-bottom:1px solid var(--line); padding:11px 10px;}
+  .client-fyp-table td.num{text-align:right; font-weight:600; color:var(--navy); white-space:nowrap;}
+  .client-fyp-empty{color:var(--ink-soft); font-size:13px; padding:8px 0;}
+  .lead-name-link{all:unset; cursor:pointer; color:var(--navy); font-weight:700;}
+  .lead-name-link:hover{text-decoration:underline; color:var(--brass);}
+  .lead-detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 20px;}
+  .lead-detail-item{border-bottom:1px solid var(--line); padding-bottom:10px;}
+  .lead-detail-item.full{grid-column:1 / -1;}
+  .lead-detail-label{font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.6px; margin-bottom:4px; font-weight:700;}
+  .lead-detail-value{font-size:14px; color:var(--navy); font-weight:600; word-break:break-word;}
+  .lead-detail-value.empty{color:var(--ink-soft); font-weight:500;}
+  .contact-link{color:var(--brass-dark); font-weight:700; text-decoration:none;}
+  .contact-link:hover{text-decoration:underline;}
+  .lead-remark{font-size:11px; font-weight:700; color:var(--brass-dark);}
+  .move-badge{display:inline-block; border:0; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:700; line-height:1; white-space:nowrap;}
+  .move-push{background:#dceee4; color:#237044;}
+  .move-pull{background:#dce7f5; color:#2b5f96;}
+  .push-pull-note{display:none; margin-top:22px; padding:20px 22px; border:1px solid var(--line); border-radius:14px; background:#fff;}
+  .push-pull-note.visible{display:block;}
+  .push-pull-note h3{margin:0 0 8px; color:var(--navy); font-size:17px;}
+  .push-pull-note h4{margin:14px 0 5px; font-size:13px; color:var(--navy);}
+  .push-pull-note ul{margin:5px 0 0 18px; padding:0; color:var(--ink-soft); font-size:12.5px; line-height:1.7;}
+  .rhythm-table{width:100%; border-collapse:collapse; margin-top:10px; font-size:13px;}
+  .rhythm-table th,.rhythm-table td{padding:9px 8px; border-bottom:1px solid var(--line); text-align:left;}
+  .rhythm-table th{color:var(--navy); font-weight:700;}
+  .client-metrics{display:grid; gap:12px; margin-bottom:22px;}
+  .client-metrics-primary,.client-metrics-secondary{display:grid; gap:12px;}
+  .client-metrics-primary{grid-template-columns:repeat(5,minmax(0,1fr));}
+  .client-metrics-secondary{grid-template-columns:repeat(6,minmax(0,1fr));}
+  .client-metric{min-width:0; border:1px solid var(--line); border-radius:12px; padding:14px 15px; background:#fff;}
+  .client-metric.secondary{padding:11px 13px; background:#fbfcfa;}
+  .client-metric-label{font-size:10px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.35px; line-height:1.3;}
+  .client-metric-value{margin-top:6px; color:var(--navy); font-size:20px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .client-metric.secondary .client-metric-value{font-size:15px; margin-top:4px;}
+  @media (max-width:1000px){.client-metrics-primary{grid-template-columns:repeat(3,1fr);}.client-metrics-secondary{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:560px){.client-metrics-primary,.client-metrics-secondary{grid-template-columns:repeat(2,1fr);}}
+  .lead-view-tabs{display:flex; gap:8px; margin:0 0 18px;}
+  .lead-view-tab{all:unset; cursor:pointer; padding:9px 14px; border:1px solid var(--line); border-radius:8px; color:var(--ink-soft); font-size:12.5px; font-weight:700; background:#fff;}
+  .lead-view-tab:hover,.lead-view-tab.active{background:var(--brass); border-color:var(--brass); color:#fff;}
+  @media (max-width:480px){
+    .client-fyp-dialog{padding:18px;}
+    .client-fyp-table{font-size:12px;}
+    .client-fyp-table th,.client-fyp-table td{padding:9px 6px;}
   }
 
   /* --- leaf detail view --- */
@@ -634,13 +706,159 @@
     padding:0 4px;
     word-break:break-all;
   }
+
+  /* refreshed interface */
+  :root{
+    --navy:#172331;
+    --navy-soft:#263746;
+    --ivory:#f6f7f4;
+    --ink:#24313b;
+    --ink-soft:#75818a;
+    --brass:#d35f3f;
+    --brass-soft:#f7ddd1;
+    --line:#dfe5e2;
+    --red:#b94b40;
+    --stripe:#eaf0ed;
+    --brass-dark:#ae4932;
+    --mint:#dceee4;
+    --shadow:0 18px 45px rgba(23,35,49,.08);
+  }
+  body{
+    background:radial-gradient(circle at 92% -10%, #fff 0, transparent 34%), var(--ivory);
+  }
+  .sidebar{
+    width:248px;
+    padding:26px 18px 20px;
+    background:var(--navy);
+    border-right:0;
+    color:#fff;
+    box-shadow:10px 0 30px rgba(23,35,49,.06);
+    z-index:2;
+  }
+  .brand{color:#fff; font-size:19px; letter-spacing:-.4px; padding:0 10px 28px;}
+  .brand::before{
+    content:'B'; display:inline-grid; place-items:center; width:30px; height:30px;
+    margin-right:9px; border-radius:9px; background:var(--brass); color:#fff;
+    font-size:15px; vertical-align:-7px;
+  }
+  .brand span{color:#aab9c0; margin-left:40px;}
+  .today-badge{color:#91a3ac; padding:0 10px 12px; font-size:10.5px;}
+  #group-nav{display:grid; gap:5px;}
+  .nav-item{width:100%; padding:12px 13px; border-radius:10px; color:#aab9c0; font-size:13.5px;}
+  .nav-item:hover{background:rgba(255,255,255,.08); color:#fff;}
+  .nav-item.active{background:var(--brass); color:#fff; box-shadow:0 8px 18px rgba(211,95,63,.25);}
+  .nav-item .count{color:#9aabb3; background:rgba(255,255,255,.08);}
+  .nav-item.active .count{color:#fff; background:rgba(255,255,255,.2);}
+  .sidebar-user{color:#91a3ac; padding:12px 10px 0; border-top:1px solid rgba(255,255,255,.1);}
+  .signout-link{color:#91a3ac; padding:12px 10px 0;}
+  .signout-link:hover{color:#fff;}
+  main{padding:42px clamp(24px,5vw,74px); max-width:1600px;}
+  main::before{content:'PRU LIFE UK'; display:block; color:var(--brass); font-size:10px; font-weight:700; letter-spacing:1.8px; margin-bottom:10px;}
+  h1{font-size:31px; letter-spacing:-.9px; color:var(--navy);}
+  .sub{font-size:13px; margin-bottom:30px; color:var(--ink-soft);}
+  .box-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px;}
+  .box{min-height:190px; position:relative; justify-content:center; align-items:center; text-align:center; border:1px solid var(--line); border-radius:14px; padding:28px 34px; box-shadow:0 5px 16px rgba(23,35,49,.025);}
+  .box:hover{border-color:var(--brass); transform:translateY(-3px); box-shadow:var(--shadow);}
+  .box .box-top{width:100%; justify-content:center; align-items:center;}
+  .box .box-count{color:var(--navy); font-size:36px; line-height:1;}
+  .box .box-count-label{color:var(--ink-soft);}
+  .box .box-label{font-size:19px; color:var(--navy); line-height:1.35;}
+  .box .box-arrow{position:absolute; top:18px; right:20px; color:var(--brass); font-size:23px;}
+  .leaf-view.visible{animation:fade .24s ease;}
+  .back-link{color:var(--ink-soft); margin-bottom:18px;}
+  .back-link:hover{color:var(--brass);}
+  .card,.entry-form,.table-form,.table-scroll,.achv-card,.travel-card,.totals-box,.year-countdown-card{border-color:var(--line); border-radius:14px; box-shadow:0 5px 16px rgba(23,35,49,.025);}
+  .entry-form,.table-form{padding:22px;}
+  input,textarea,select{background:#fbfcfa; border-radius:8px; border-color:#d7dfdb;}
+  input:focus,textarea:focus,select:focus{outline:3px solid var(--brass-soft); border-color:var(--brass);}
+  button.primary{background:var(--brass); border-radius:8px; box-shadow:0 5px 12px rgba(211,95,63,.2);}
+  button.primary:hover{background:var(--brass-dark);}
+  .table-form .fields{grid-template-columns:repeat(4,minmax(0,1fr));}
+  table.data-table th{background:#f0f4f1; color:var(--navy);}
+  table.data-table tbody tr:hover{background:#fff7f3;}
+  .status-Issued{background:var(--mint); color:#2f684b;}
+  .status-Pending{background:#fff0d5; color:#906624;}
+  .rewards-section h2{color:var(--navy);}
+  .achv-card.done{background:linear-gradient(0deg,#fff,var(--brass-soft) 180%);}
+  .progress-fill{background:var(--navy);}
+  .reward-clickable{cursor:pointer;}
+  .reward-clickable:focus{outline:3px solid var(--brass-soft); outline-offset:3px;}
+  @media (max-width:760px){
+    body{display:block;}
+    .sidebar{position:relative; width:100%; height:auto; padding:18px 16px 14px;}
+    .brand{padding:0 4px 16px;}
+    .brand span{margin-left:40px;}
+    #group-nav{grid-template-columns:repeat(3,1fr);}
+    .today-badge,.sidebar-user,.signout-link{display:none;}
+    main{padding:28px 18px 42px;}
+    h1{font-size:26px;}
+    .table-form .fields,.entry-form .fields{grid-template-columns:1fr 1fr;}
+    .table-form .fields .span2{grid-column:1 / -1;}
+  }
+  @media (max-width:480px){
+    #group-nav{grid-template-columns:1fr;}
+    .box-grid,.achv-grid,.travel-grid{grid-template-columns:1fr;}
+    .table-form .fields,.entry-form .fields{grid-template-columns:1fr;}
+    .entry-form .fields .full{grid-column:auto;}
+  }
+  /* Montserrat is the dashboard type system; key metrics use a stronger weight. */
+  *{font-family:'Montserrat',sans-serif;}
+  strong,.box-count,.tb-value,.achv-pct,.achv-name,.value,td.num,.status-pill,.nav-item.active{font-weight:700;}
+  h1,h2,h3,.box-label,.brand{font-family:'Montserrat',sans-serif;}
+  /* Use the former sidebar as a space-saving top navigation bar. */
+  #app-shell{display:block !important; width:100%;}
+  .sidebar{
+    position:sticky;
+    top:0;
+    width:100%;
+    height:auto;
+    min-height:0;
+    padding:14px clamp(18px,4vw,56px);
+    display:grid !important;
+    grid-template-columns:auto 1fr auto auto;
+    grid-template-areas:'brand nav user trash' 'today nav signout trash';
+    align-items:center;
+    gap:4px 24px;
+    background:var(--navy);
+    box-shadow:0 8px 24px rgba(23,35,49,.14);
+  }
+  .sidebar .brand{grid-area:brand; padding:0; white-space:nowrap;}
+  .sidebar .today-badge{grid-area:today; padding:0 0 0 40px; margin:0; white-space:nowrap;}
+  .sidebar #group-nav{grid-area:nav; display:flex; flex-wrap:wrap; justify-content:center; gap:5px;}
+  .sidebar .nav-item{width:auto; padding:9px 12px; white-space:nowrap;}
+  .sidebar .sidebar-user{grid-area:user; padding:0; border:0; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sidebar .signout-link{grid-area:signout; padding:0; margin:0; justify-self:end; white-space:nowrap;}
+  .sidebar .trash-button{grid-area:trash;}
+  .trash-button{all:unset; grid-area:trash; cursor:pointer; color:#aab9c0; font-size:12px; font-weight:700; padding:7px 10px; border:1px solid rgba(255,255,255,.18); border-radius:8px; white-space:nowrap;}
+  .trash-button:hover{color:#fff; border-color:var(--brass); background:rgba(255,255,255,.08);}
+  .trash-modal{position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(23,35,49,.48);}
+  .trash-modal.open{display:flex;}
+  .trash-dialog{width:min(820px,100%); max-height:88vh; overflow:auto; background:#fff; border-radius:16px; padding:24px; box-shadow:0 24px 70px rgba(23,35,49,.22);}
+  .trash-actions{display:flex; justify-content:flex-end; gap:10px; margin-bottom:16px;}
+  .trash-item{display:flex; justify-content:space-between; gap:14px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line);}
+  .trash-item-title{font-weight:700; color:var(--navy);}
+  .trash-item-meta{font-size:11px; color:var(--ink-soft); margin-top:3px;}
+  main{max-width:none; padding:38px clamp(20px,5vw,74px) 60px;}
+  @media (max-width:900px){
+    .sidebar{grid-template-columns:1fr auto auto; grid-template-areas:'brand user trash' 'nav nav nav' 'today signout signout'; gap:8px 14px;}
+    .sidebar #group-nav{justify-content:flex-start;}
+  }
+  @media (max-width:560px){
+    .sidebar{padding:12px 14px;}
+    .sidebar .brand{font-size:16px;}
+    .sidebar .brand span{margin-left:34px;}
+    .sidebar .sidebar-user{display:none;}
+    .sidebar #group-nav{overflow-x:auto; flex-wrap:nowrap; justify-content:flex-start; padding-bottom:2px;}
+    .sidebar .today-badge{padding-left:0;}
+    main{padding:26px 14px 44px;}
+  }
 </style>
 </head>
 <body>
 
 <div id="login-screen">
   <div class="login-box">
-    <div class="brand">Benefits<span>Employee dashboard</span></div>
+    <div class="brand">Bam<span>Personal dashboard</span></div>
     <label for="login-email">Email</label>
     <input id="login-email" type="email" autocomplete="username" placeholder="you@example.com">
     <label for="login-password">Password</label>
@@ -655,11 +873,12 @@
 
 <div id="app-shell" style="display:flex; width:100%;">
   <div class="sidebar" style="display:flex; flex-direction:column;">
-    <div class="brand">Benefits<span>Employee dashboard</span></div>
+    <div class="brand">Bam<span>Personal dashboard</span></div>
     <div class="today-badge" id="today-badge"></div>
     <div id="group-nav"></div>
     <div class="sidebar-user" id="sidebar-user"></div>
     <button class="signout-link" id="signout-btn">Sign out</button>
+    <button class="trash-button" id="trash-btn" onclick="openTrash()">Trash</button>
   </div>
 
   <main>
@@ -669,6 +888,13 @@
     <div class="box-grid" id="box-grid"></div>
     <div id="leaf-mount"></div>
   </main>
+</div>
+<div class="trash-modal" id="trash-modal" role="dialog" aria-modal="true" aria-labelledby="trash-title">
+  <div class="trash-dialog">
+    <div class="client-fyp-head"><div><h2 id="trash-title">Trash</h2><p>Deleted records can be restored or permanently removed.</p></div><button class="client-fyp-close" onclick="closeTrash()" aria-label="Close Trash">×</button></div>
+    <div class="trash-actions"><button class="clear-link" onclick="emptyTrash()">Empty Trash</button></div>
+    <div id="trash-list"></div>
+  </div>
 </div>
 
 <script type="module">
@@ -784,8 +1010,9 @@
 const GROUPS = [
   { id: "pru", label: "Pru", items: [
     { id: "pru-rewards", label: "2026 Rewards & Achievements" },
-    { id: "pru-clients", label: "2026 Clients" },
+    { id: "pru-clients", label: "Issued Clients" },
     { id: "pru-leads", label: "Pru Leads" },
+    { id: "pru-servicing", label: "Client Servicing" },
     { id: "prufin", label: "Prufin" },
   ]},
   { id: "hmo", label: "HMO", items: [
@@ -809,31 +1036,50 @@ const GROUPS = [
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-const PLAN_OPTIONS = ["PAA+","Elite 15","Elite 10","Elite 7","Elite 5","Exact 5","Exact 10","Exact 15","PLFL 20","PLFL 15","PLFL 10","PLFL 5","PYT","PSI","PLI 5","PLI 10","PruMil","PIA","PruWealth"];
+const PLAN_OPTIONS = ["PAA+","Elite 15","Elite 10","Elite 7","Elite 5","Exact 5","Exact 10","Exact 15","PLFL 20","PLFL 15","PLFL 10","PLFL 5","PYT","PSI","PLI 5","PLI 10","PruMil","PIA","PruWealth","PHP"];
 
 const MODE_OPTIONS = ["Annual","Semi-Annual","Quarterly","Monthly"];
 const MODE_FREQ = { "Annual": 1, "Semi-Annual": 2, "Quarterly": 4, "Monthly": 12 };
+const LEAD_SOURCES = ["FB","IG","Tiktok","FB Ads","Referral","B2B/Flyering"];
+const LEAD_STATUSES = ["Messaged","Inquired","Prospect","Appointment Set","Quote Sent","App Submitted","Issued"];
+const LEAD_NEEDS = ["Life Insurance","Health Insurance","Investments","Guaranteed Cash","Educational","Retirement Plan"];
 
-/* -- rolling-12-month FYP (First Year Premium: premiums actually paid, in a
-   trailing 12-month window from the client's submitted month) -- */
-function submittedDateFromMonth(monthName, year){
-  const idx = MONTHS.indexOf(monthName);
+/* -- rolling-12-month FYP: paid premium installments inside the 12 calendar
+  months ending today -- */
+function submittedDateFromMonth(value, year){
+  if(/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))){
+    return new Date(value + 'T00:00:00');
+  }
+  const idx = MONTHS.indexOf(value);
   if(idx === -1) return null;
   return new Date(year, idx, 1);
 }
-function computeFYP(row){
+function isIssuedIn2026(row){
+  const issuedDate = submittedDateFromMonth(row.submitted, 2026);
+  return issuedDate && issuedDate.getFullYear() === 2026;
+}
+function computeFYP(row, asOfDate){
   const premium = parseCurrency(row.premium);
   const freq = MODE_FREQ[row.mode];
   if(!premium || !freq || !row.submitted) return 0;
-  const start = submittedDateFromMonth(row.submitted, 2026);
-  if(!start) return 0;
-  const today = new Date();
-  let monthsElapsed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
-  if(monthsElapsed < 0) monthsElapsed = 0;
-  const rollingMonths = Math.min(monthsElapsed, 12); // trailing 12-month cap
+  const submittedDate = submittedDateFromMonth(row.submitted, 2026);
+  if(!submittedDate) return 0;
+  const endDate = asOfDate || new Date();
+  const endMonth = endDate.getFullYear() * 12 + endDate.getMonth();
+  const windowStartMonth = endMonth - 12;
+  const submittedMonth = submittedDate.getFullYear() * 12 + submittedDate.getMonth();
   const periodMonths = 12 / freq;
-  const paymentsMade = Math.min(freq, Math.floor(rollingMonths / periodMonths) + 1);
-  return paymentsMade * premium;
+  if(submittedMonth < windowStartMonth || submittedMonth > endMonth) return 0;
+  const firstIncludedPayment = submittedMonth;
+  const paymentsInWindow = firstIncludedPayment > endMonth
+    ? 0
+    : Math.min(freq, Math.floor((endMonth - firstIncludedPayment) / periodMonths) + 1);
+  return paymentsInWindow * premium;
+}
+
+function clientFYP(row, asOfDate){
+  if(row.status && row.status !== 'Issued') return 0;
+  return computeFYP(row, asOfDate);
 }
 
 /* leaf ids that use the structured client table instead of the generic form */
@@ -841,33 +1087,54 @@ const TABLE_LEAVES = {
   "pru-clients": {
     columns: [
       { key: "name",      label: "Client's Name", type: "text",   placeholder: "Last, First" },
-      { key: "submitted", label: "Submitted",      type: "select", options: MONTHS },
+      { key: "submitted", label: "Issued Date",    type: "date" },
       { key: "status",    label: "Status",         type: "select", options: ["Issued","Pending","In Process","Declined"] },
+      { key: "clientType", label: "Client Type", type: "select", options: ["Own","Adopted"] },
       { key: "plan",      label: "Plan",           type: "select", options: PLAN_OPTIONS },
       { key: "mode",      label: "Mode of Payment",type: "select", options: MODE_OPTIONS },
       { key: "premium",   label: "Premium",        type: "currency" },
       { key: "sa",        label: "SA",             type: "currency" },
       { key: "ape",       label: "APE",            type: "currency" },
       { key: "fyp",       label: "FYP",            type: "computed", compute: computeFYP },
+      { key: "contactLink", label: "Contact Link", type: "url", placeholder: "https://..." },
     ],
     totalKeys: ["premium","sa","ape","fyp"],
     legend: [
       ["SA", "Sum Assured"],
       ["APE", "Annualized Premium Equivalent"],
-      ["FYP", "First Year Premium — premiums actually paid, trailing 12 months (auto-computed)"],
+      ["FYP", "First Year Premium — paid Issued premiums inside the rolling 12-month window (auto-computed)"],
+    ],
+  },
+  "pru-leads": {
+    lead: true,
+    columns: [
+      { key: "name", label: "Name of Lead", type: "text", placeholder: "Last, First" },
+      { key: "age", label: "Age", type: "number", placeholder: "Age" },
+      { key: "contactStarted", label: "Date", type: "date" },
+      { key: "lastContact", label: "Last Contact", type: "date" },
+      { key: "source", label: "Source", type: "select", options: LEAD_SOURCES },
+      { key: "occupation", label: "Occupation", type: "text", placeholder: "Occupation" },
+      { key: "contact", label: "Contact Number", type: "text", placeholder: "+63..." },
+      { key: "email", label: "Email Address", type: "email", placeholder: "name@example.com" },
+      { key: "ape", label: "Proposed APE", type: "currency" },
+      { key: "plan", label: "Proposed Plan", type: "text", placeholder: "Plan" },
+      { key: "status", label: "Status", type: "select", options: LEAD_STATUSES },
+      { key: "need", label: "Need", type: "checklist", options: LEAD_NEEDS },
+      { key: "lastMove", label: "Last Move", type: "select", options: ["Push","Pull"] },
+      { key: "contactLink", label: "Contact Link", type: "url", placeholder: "https://..." },
     ],
   },
 };
 
 const SEED_DATA = {
   "pru-clients": [
-    { name: "Salva, Kairos (Jade's BB)", submitted: "January",  status: "Issued", plan: "PAA+",     mode: "", premium: "", sa: "2000000",  ape: "21252"   },
-    { name: "Cangrejo, Jan Karlo",       submitted: "February", status: "Issued", plan: "Elite 15", mode: "", premium: "", sa: "3000000",  ape: "128400"  },
-    { name: "Micutuan, Rary Mae",        submitted: "February", status: "Issued", plan: "PAA+",     mode: "", premium: "", sa: "3000000",  ape: "30000"   },
-    { name: "Roca, Maria Paula",         submitted: "February", status: "Issued", plan: "PAA+",     mode: "", premium: "", sa: "2300000",  ape: "24000"   },
-    { name: "Candido, Angelica",         submitted: "March",    status: "Issued", plan: "",          mode: "", premium: "", sa: "1500000",  ape: "61279.80"},
-    { name: "Coronel, Nikko",            submitted: "April",    status: "Issued", plan: "",          mode: "", premium: "", sa: "1000000",  ape: "40981.10"},
-    { name: "Nicart, Maikei",            submitted: "April",    status: "Issued", plan: "PAA+",     mode: "", premium: "", sa: "2200000",  ape: "24007.08"},
+    { name: "Salva, Kairos (Jade's BB)", submitted: "2026-01-15", status: "Issued", plan: "PAA+",     mode: "", premium: "", sa: "2000000",  ape: "21252"   },
+    { name: "Cangrejo, Jan Karlo",       submitted: "2026-02-15", status: "Issued", plan: "Elite 15", mode: "", premium: "", sa: "3000000",  ape: "128400"  },
+    { name: "Micutuan, Rary Mae",        submitted: "2026-02-15", status: "Issued", plan: "PAA+",     mode: "", premium: "", sa: "3000000",  ape: "30000"   },
+    { name: "Roca, Maria Paula",         submitted: "2026-02-15", status: "Issued", plan: "PAA+",     mode: "", premium: "", sa: "2300000",  ape: "24000"   },
+    { name: "Candido, Angelica",         submitted: "2026-03-15", status: "Issued", plan: "",          mode: "", premium: "", sa: "1500000",  ape: "61279.80"},
+    { name: "Coronel, Nikko",            submitted: "2026-04-15", status: "Issued", plan: "",          mode: "", premium: "", sa: "1000000",  ape: "40981.10"},
+    { name: "Nicart, Maikei",            submitted: "2026-04-15", status: "Issued", plan: "PAA+",     mode: "", premium: "", sa: "2200000",  ape: "24007.08"},
   ],
 };
 
@@ -879,7 +1146,7 @@ const ACHIEVEMENTS = [
   { key: "senior",   label: "Senior Achiever",                        threshold: 1500000 },
   { key: "elite",    label: "Elite Achiever",                         threshold: 2500000 },
   { key: "star",     label: "Star Achiever",                          threshold: 3800000 },
-  { key: "mdrt",     label: "Million Dollar Round Table (MDRT)",      threshold: 3518400 },
+  { key: "mdrt",     label: "Million Dollar Round Table (MDRT)",      threshold: 3518400, basis: "fyp" },
 ];
 const MDRT_THRESHOLD = 3518400;
 /* South Korea travel only counts APE from clients Issued within this window —
@@ -985,6 +1252,15 @@ function fmtDate(d){
   const dt = new Date(d + 'T00:00:00');
   return dt.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
 }
+function fmtIssuedDate(value){
+  const date = submittedDateFromMonth(value, 2026);
+  return date ? date.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : value;
+}
+function dateInputValue(value){
+  const date = submittedDateFromMonth(value, 2026);
+  if(!date) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
 function parseCurrency(s){
   if(!s) return 0;
   const n = parseFloat(String(s).replace(/[₱,\s]/g, ''));
@@ -992,6 +1268,9 @@ function parseCurrency(s){
 }
 function fmtCurrency(n){
   return '₱' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function contactHref(value){
+  return /^https?:\/\//i.test(String(value || '')) ? String(value) : '';
 }
 
 /* -- generic form panel builder -- */
@@ -1017,6 +1296,10 @@ function buildGenericPanel(item, groupLabel){
         <div>
           <label for="${item.id}-value">Amount / Value (optional)</label>
           <input id="${item.id}-value" type="text" placeholder="e.g. ₱5,000 or 3">
+        </div>
+        <div>
+          <label for="${item.id}-contact-link">Contact Link (optional)</label>
+          <input id="${item.id}-contact-link" type="url" placeholder="https://...">
         </div>
         <div class="full">
           <label for="${item.id}-notes">Notes (optional)</label>
@@ -1048,6 +1331,13 @@ function buildTablePanel(item, groupLabel, config){
   const fieldInputs = config.columns.map(col => {
     if(col.type === 'computed') return '';
     const wide = col.type === 'text' ? 'span2' : '';
+    if(col.type === 'date'){
+      return `
+        <div>
+          <label>${col.label}</label>
+          <input id="${item.id}-f-${col.key}" type="date">
+        </div>`;
+    }
     if(col.type === 'select'){
       return `
         <div class="${wide}">
@@ -1065,6 +1355,9 @@ function buildTablePanel(item, groupLabel, config){
           <label>${col.label}${hint}</label>
           <input id="${item.id}-f-${col.key}" type="text" placeholder="0.00">
         </div>`;
+    }
+    if(col.type === 'url'){
+      return `<div><label>${col.label}</label><input id="${item.id}-f-${col.key}" type="url" placeholder="${col.placeholder || 'https://...'}"></div>`;
     }
     return `
       <div class="${wide}">
@@ -1104,11 +1397,111 @@ function buildTablePanel(item, groupLabel, config){
             ${buildSortOptions(config)}
           </select>
         </label>
+        ${item.id === 'pru-clients' ? `<label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">View only
+          <select id="${item.id}-year" onchange="setClientYear(this.value)" style="width:auto; padding:6px 8px; font-size:12.5px;">
+            <option value="all">All years</option>${[2022,2023,2024,2025,2026,2027,2028,2029].map(year => `<option value="${year}">${year}</option>`).join('')}
+          </select>
+        </label>` : ''}
         <button class="clear-link" onclick="clearEntries('${item.id}')">Clear all</button>
       </div>
     </div>
     <div id="${item.id}-list"></div>
   `;
+  return el;
+}
+
+function buildLeadPanel(item, groupLabel, config){
+  const el = document.createElement('div');
+  el.className = 'leaf-view';
+  el.id = 'leaf-' + item.id;
+  const fields = config.columns.map(col => {
+    if(col.type === 'select') return `<div><label>${col.label}</label><select id="${item.id}-f-${col.key}"><option value="">—</option>${col.options.map(option => `<option value="${option}">${option}</option>`).join('')}</select></div>`;
+    if(col.type === 'checklist') return `<div><label>${col.label}</label><select id="${item.id}-f-${col.key}" multiple size="1" title="Select one or more needs">${col.options.map(option => `<option value="${option}">${option}</option>`).join('')}</select></div>`;
+    return `<div><label>${col.label}</label><input id="${item.id}-f-${col.key}" type="${col.type === 'email' ? 'email' : col.type === 'url' ? 'url' : col.type === 'date' ? 'date' : col.type === 'number' ? 'number' : 'text'}" placeholder="${col.placeholder || ''}"></div>`;
+  }).join('');
+  el.innerHTML = `
+    <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
+    <h1>${item.label}</h1>
+    <div class="sub">${groupLabel} · capture and follow up every lead</div>
+    <div class="table-form">
+      <div class="fields">${fields}</div>
+      <div class="form-actions">
+        <button class="clear-link" id="${item.id}-cancel" style="display:none; margin-right:auto;" onclick="cancelLeadEdit('${item.id}')">Cancel edit</button>
+        <button class="primary" id="${item.id}-submit" onclick="addLeadRow('${item.id}')">Add lead</button>
+      </div>
+    </div>
+    <div class="save-note" id="${item.id}-savenote"></div>
+    <div class="lead-view-tabs" role="tablist" aria-label="Lead views">
+      <button class="lead-view-tab active" id="${item.id}-tab-all" role="tab" onclick="setLeadView('${item.id}','all')">All Entries</button>
+      <button class="lead-view-tab" id="${item.id}-tab-nurture" role="tab" onclick="setLeadView('${item.id}','nurture')">14 Days Nurture</button>
+      <button class="lead-view-tab" id="${item.id}-tab-longterm" role="tab" onclick="setLeadView('${item.id}','longterm')">Long-Term Nurture</button>
+    </div>
+    <div class="list-head">
+      <h3>All Entries</h3>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">Sort by
+          <select id="${item.id}-sort" onchange="setLeadSort('${item.id}', this.value)" style="width:auto; padding:6px 8px; font-size:12.5px;">
+            <option value="date-desc">Date Added</option><option value="name-asc">Name of Lead</option><option value="source-asc">Source</option><option value="status-asc">Status</option>
+          </select>
+        </label>
+        <button class="clear-link" onclick="clearEntries('${item.id}')">Clear all</button>
+      </div>
+    </div>
+    <div id="${item.id}-list"></div>
+    <div class="push-pull-note" id="${item.id}-push-pull-note">
+      <h3>The Push &amp; Pull Method</h3>
+      <h3>14-Day Rhythm</h3>
+      <table class="rhythm-table"><thead><tr><th>Days</th><th>Focus</th></tr></thead><tbody>
+        <tr><td>0–1</td><td>${moveBadge('Push')} — Start &amp; discover</td></tr>
+        <tr><td>2</td><td>${moveBadge('Pull')} — Give space</td></tr>
+        <tr><td>3</td><td>${moveBadge('Push')} — Educate</td></tr>
+        <tr><td>4</td><td>${moveBadge('Pull')}</td></tr>
+        <tr><td>5</td><td>${moveBadge('Push')} — Invite to assessment</td></tr>
+        <tr><td>6</td><td>${moveBadge('Pull')}</td></tr>
+        <tr><td>7</td><td>${moveBadge('Push')} — Give value</td></tr>
+        <tr><td>8</td><td>${moveBadge('Pull')}</td></tr>
+        <tr><td>9–10</td><td>${moveBadge('Push')} — Build trust + recommend</td></tr>
+        <tr><td>11</td><td>${moveBadge('Pull')} — Let them think</td></tr>
+        <tr><td>12</td><td>${moveBadge('Push')} — Ask for decision</td></tr>
+        <tr><td>13</td><td>${moveBadge('Pull')} — Remove pressure</td></tr>
+        <tr><td>14</td><td><span class="move-badge move-push">PUSH</span><span class="move-badge move-pull">PULL</span> — Close the loop</td></tr>
+      </tbody></table>
+      <h4>🟢 PUSH = create movement</h4>
+      <ul><li>Ask questions</li><li>Educate</li><li>Challenge assumptions</li><li>Give recommendations</li><li>Ask for the next step</li></ul>
+      <h4>🔵 PULL = create space</h4>
+      <ul><li>Don't chase</li><li>Let them think</li><li>Remove pressure</li><li>Give them permission to decide</li></ul>
+    </div>
+    <div class="client-fyp-modal" id="${item.id}-detail-modal" role="dialog" aria-modal="true">
+      <div class="client-fyp-dialog"><div class="client-fyp-head"><div><h2 id="${item.id}-detail-title">Lead Details</h2><p>Full lead information</p></div><button class="client-fyp-close" aria-label="Close lead details" onclick="closeLeadDetails('${item.id}')">×</button></div><div id="${item.id}-detail-content"></div></div>
+    </div>`;
+  return el;
+}
+
+function buildServicingPanel(item, groupLabel){
+  const el = document.createElement('div');
+  el.className = 'leaf-view';
+  el.id = 'leaf-' + item.id;
+  el.innerHTML = `
+    <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
+    <h1>${item.label}</h1>
+    <div class="sub">${groupLabel} · manage issued clients</div>
+    <div class="table-form">
+      <div class="fields">
+        <div><label>Client Name</label><input id="${item.id}-f-name" type="text" placeholder="Last, First"></div>
+        <div><label>Issued Date</label><input id="${item.id}-f-issuedDate" type="date"></div>
+        <div><label>Client Type</label><select id="${item.id}-f-servicingType"><option value="Own">Own</option><option value="Adopted">Adopted</option></select></div>
+        <div><label>Contact Link</label><input id="${item.id}-f-contactLink" type="url" placeholder="https://..."></div>
+        <div class="full"><label>Notes</label><textarea id="${item.id}-f-notes" placeholder="Client servicing notes"></textarea></div>
+      </div>
+      <div class="form-actions"><button class="clear-link" id="${item.id}-cancel" style="display:none; margin-right:auto;" onclick="cancelServicingEdit('${item.id}')">Cancel edit</button><button class="primary" id="${item.id}-submit" onclick="addServicingEntry('${item.id}')">Add client</button></div>
+    </div>
+    <div class="save-note" id="${item.id}-savenote"></div>
+    <div class="lead-view-tabs" role="tablist" aria-label="Client servicing views">
+      <button class="lead-view-tab active" id="${item.id}-tab-all" onclick="setServicingView('${item.id}','all')">All</button>
+      <button class="lead-view-tab" id="${item.id}-tab-own" onclick="setServicingView('${item.id}','Own')">Own</button>
+      <button class="lead-view-tab" id="${item.id}-tab-adopted" onclick="setServicingView('${item.id}','Adopted')">Adopted</button>
+    </div>
+    <div id="${item.id}-list"></div>`;
   return el;
 }
 
@@ -1124,6 +1517,18 @@ function buildRewardsPanel(item, groupLabel){
     <div class="sub">${groupLabel} · progress is calculated live from your Issued 2026 Clients' APE</div>
 
     <div id="rewards-mount"></div>
+    <div class="client-fyp-modal" id="client-fyp-modal" role="dialog" aria-modal="true" aria-labelledby="client-fyp-title">
+      <div class="client-fyp-dialog">
+        <div class="client-fyp-head">
+          <div>
+            <h2 id="client-fyp-title">2026 Client Production</h2>
+            <p>Issued clients with APE and rolling 12-month paid FYP.</p>
+          </div>
+          <button class="client-fyp-close" aria-label="Close client production" onclick="closeClientFypModal()">×</button>
+        </div>
+        <div id="client-fyp-list"></div>
+      </div>
+    </div>
 
     <div class="entry-form">
       <div class="fields">
@@ -1176,29 +1581,37 @@ async function renderRewardsPanel(){
   if(!mount) return; // panel not built yet
   const clients = await getEntries('pru-clients');
   const issued = clients.filter(r => r.status === 'Issued');
+  const fypAsOfDate = new Date();
 
-  // Achievement Ladder still runs on total Issued APE (all months).
-  const totalAPE = issued.reduce((sum, r) => sum + parseCurrency(r.ape), 0);
+  // Achievement Ladder runs on Issued APE except MDRT, which uses paid FYP.
+  const achievementClients = issued.filter(isIssuedIn2026);
+  const totalAPE = achievementClients.reduce((sum, r) => sum + parseCurrency(r.ape), 0);
 
   // South Korea Travel only counts APE from clients Issued Aug–Nov 2026.
   const skoreaAPE = issued
-    .filter(r => SKOREA_WINDOW_MONTHS.includes(r.submitted))
+    .filter(r => {
+      const issuedDate = submittedDateFromMonth(r.submitted, 2026);
+      return isIssuedIn2026(r) && issuedDate && SKOREA_WINDOW_MONTHS.includes(MONTHS[issuedDate.getMonth()]);
+    })
     .reduce((sum, r) => sum + parseCurrency(r.ape), 0);
 
   // MDRT Annual/Global meetings qualify on FYP, not APE.
-  const totalFYP = issued.reduce((sum, r) => sum + computeFYP(r), 0);
+  const totalFYP = issued.reduce((sum, r) => sum + clientFYP(r, fypAsOfDate), 0);
 
   const achvCards = ACHIEVEMENTS.map(a => {
-    const pct = progressPct(totalAPE, a.threshold);
+    const usesFyp = a.basis === 'fyp';
+    const value = usesFyp ? totalFYP : totalAPE;
+    const unit = usesFyp ? 'FYP' : 'APE';
+    const pct = progressPct(value, a.threshold);
     const done = pct >= 100;
-    const remaining = Math.max(0, a.threshold - totalAPE);
+    const remaining = Math.max(0, a.threshold - value);
     return `
-      <div class="achv-card ${done ? 'done' : ''}">
+      <div class="achv-card reward-clickable ${done ? 'done' : ''}" role="button" tabindex="0" onclick="openRewardBreakdown('achievement','${a.key}')" onkeydown="if(event.key === 'Enter' || event.key === ' ') openRewardBreakdown('achievement','${a.key}')">
         <div class="achv-top">
           <div class="achv-name">${a.label}</div>
           <div class="achv-pct">${pct.toFixed(0)}%</div>
         </div>
-        <div class="achv-sub"><strong>${fmtCurrency(totalAPE)}</strong> of ${fmtCurrency(a.threshold)} APE</div>
+        <div class="achv-sub"><strong>${fmtCurrency(value)}</strong> of ${fmtCurrency(a.threshold)} ${unit}</div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
         ${done ? `<div class="achv-badge">Achieved</div>` : ''}
         ${togoLine(remaining, done)}
@@ -1218,7 +1631,7 @@ async function renderRewardsPanel(){
       ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left · until ${fmtDate(t.deadline)}`
       : `Window closed ${fmtDate(t.deadline)}`;
     return `
-      <div class="travel-card ${done ? 'achv-card done' : ''}">
+      <div class="travel-card reward-clickable ${done ? 'achv-card done' : ''}" role="button" tabindex="0" onclick="openRewardBreakdown('travel','${t.key}')" onkeydown="if(event.key === 'Enter' || event.key === ' ') openRewardBreakdown('travel','${t.key}')">
         <div class="achv-top">
           <div class="achv-name">${t.label}</div>
           <div class="achv-pct">${pct.toFixed(0)}%</div>
@@ -1236,13 +1649,13 @@ async function renderRewardsPanel(){
   const mdrtDone = mdrtPct >= 100;
   const mdrtRemaining = Math.max(0, MDRT_THRESHOLD - totalFYP);
   const mdrtCards = MDRT_MEETINGS.map(m => `
-    <div class="travel-card ${mdrtDone ? 'achv-card done' : ''}">
+    <div class="travel-card reward-clickable ${mdrtDone ? 'achv-card done' : ''}" role="button" tabindex="0" onclick="openRewardBreakdown('mdrt','${m.key}')" onkeydown="if(event.key === 'Enter' || event.key === ' ') openRewardBreakdown('mdrt','${m.key}')">
       <div class="achv-top">
         <div class="achv-name">${m.label}</div>
         <div class="achv-pct">${mdrtPct.toFixed(0)}%</div>
       </div>
       <div class="loc">${m.loc}</div>
-      <div class="achv-sub"><strong>${fmtCurrency(totalFYP)}</strong> of ${fmtCurrency(MDRT_THRESHOLD)} FYP (MDRT qualification)</div>
+      <div class="achv-sub"><strong>${fmtCurrency(totalFYP)}</strong> of ${fmtCurrency(MDRT_THRESHOLD)} FYP from Issued 2026 Clients · rolling 12 months ending today</div>
       <div class="progress-track"><div class="progress-fill" style="width:${mdrtPct}%"></div></div>
       ${mdrtDone ? `<div class="achv-badge">Qualified</div>` : ''}
       ${togoLine(mdrtRemaining, mdrtDone)}
@@ -1268,6 +1681,54 @@ async function renderRewardsPanel(){
     </div>
   `;
   startYearCountdown();
+}
+
+async function openRewardBreakdown(kind, key){
+  const modal = document.getElementById('client-fyp-modal');
+  const list = document.getElementById('client-fyp-list');
+  if(!modal || !list) return;
+  const clients = await getEntries('pru-clients');
+  const issued = clients.filter(row => row.status === 'Issued');
+  const reward = [...ACHIEVEMENTS, ...TRAVEL_INCENTIVES, ...MDRT_MEETINGS].find(item => item.key === key);
+  const isFyp = kind === 'mdrt' || key === 'mdrt';
+  const fypAsOfDate = new Date();
+  const qualifying = issued
+    .filter(row => {
+      if(isFyp) return clientFYP(row, fypAsOfDate) > 0;
+      const issuedDate = submittedDateFromMonth(row.submitted, 2026);
+      if(!isIssuedIn2026(row)) return false;
+      return key === 'skorea'
+        ? issuedDate && SKOREA_WINDOW_MONTHS.includes(MONTHS[issuedDate.getMonth()])
+        : true;
+    })
+    .sort((a, b) => {
+      const aDate = submittedDateFromMonth(a.submitted, 2026);
+      const bDate = submittedDateFromMonth(b.submitted, 2026);
+      return (aDate ? aDate.getTime() : 0) - (bDate ? bDate.getTime() : 0);
+    });
+  const title = reward ? reward.label : 'Reward Breakdown';
+  const basis = isFyp ? 'FYP' : 'APE';
+  list.innerHTML = qualifying.length
+    ? `<table class="client-fyp-table">
+        <thead><tr><th>Client Name</th><th>Issued Date</th><th>APE</th><th>FYP</th><th>Counted ${basis}</th></tr></thead>
+        <tbody>${qualifying.map(row => `
+          <tr>
+            <td>${escapeHtml(row.name || 'Unnamed client')}</td>
+            <td>${escapeHtml(fmtIssuedDate(row.submitted || ''))}</td>
+            <td class="num">${fmtCurrency(parseCurrency(row.ape))}</td>
+            <td class="num">${fmtCurrency(clientFYP(row, fypAsOfDate))}</td>
+            <td class="num">${fmtCurrency(isFyp ? clientFYP(row, fypAsOfDate) : parseCurrency(row.ape))}</td>
+          </tr>`).join('')}</tbody>
+      </table>`
+    : '<div class="client-fyp-empty">No Issued 2026 Clients count toward this reward yet.</div>';
+  document.getElementById('client-fyp-title').textContent = title + ' · Client Breakdown';
+  document.querySelector('#client-fyp-modal .client-fyp-head p').textContent = `Clients counted by ${basis} for this reward.`;
+  modal.classList.add('open');
+}
+
+function closeClientFypModal(){
+  const modal = document.getElementById('client-fyp-modal');
+  if(modal) modal.classList.remove('open');
 }
 
 /* -- live countdown to Jan 1, 2027, shown at the top of Rewards & Achievements -- */
@@ -1314,6 +1775,10 @@ GROUPS.forEach(g => {
     let panel;
     if(item.id === 'pru-rewards'){
       panel = buildRewardsPanel(item, g.label);
+    }else if(item.id === 'pru-servicing'){
+      panel = buildServicingPanel(item, g.label);
+    }else if(tableConfig && tableConfig.lead){
+      panel = buildLeadPanel(item, g.label, tableConfig);
     }else if(tableConfig){
       panel = buildTablePanel(item, g.label, tableConfig);
     }else{
@@ -1359,6 +1824,10 @@ function backToGrid(){
 
 /* ---------- rendering: generic list ---------- */
 async function renderList(id){
+  if(id === 'pru-servicing') return renderServicingTable(id);
+  if(TABLE_LEAVES[id] && TABLE_LEAVES[id].lead){
+    return renderLeadTable(id);
+  }
   if(TABLE_LEAVES[id]){
     return renderTable(id);
   }
@@ -1380,7 +1849,8 @@ async function renderList(id){
             ${e.title ? escapeHtml(e.title) : '<span style="color:var(--ink-soft)">Untitled</span>'}
             ${e.date ? `<span class="date">${fmtDate(e.date)}</span>` : ''}
           </div>
-          ${e.value ? `<div class="value">${escapeHtml(e.value)}</div>` : ''}
+            ${e.value ? `<div class="value">${escapeHtml(e.value)}</div>` : ''}
+            ${contactHref(e.contactLink) ? `<div><a class="contact-link" href="${escapeHtml(contactHref(e.contactLink))}" target="_blank" rel="noopener">Open Contact Link</a></div>` : ''}
           ${e.notes ? `<div class="notes">${escapeHtml(e.notes)}</div>` : ''}
         </div>
         <div style="display:flex; gap:4px; flex-shrink:0;">
@@ -1395,21 +1865,332 @@ async function renderList(id){
 
 /* ---------- rendering: structured table ---------- */
 const sortState = {};
+let clientYearFilter = 'all';
+function setClientYear(value){
+  clientYearFilter = value;
+  renderTable('pru-clients');
+}
 function setSort(id, value){
   sortState[id] = value;
   renderTable(id);
 }
 function buildSortOptions(config){
-  const opts = ['<option value="default">Date added</option>'];
+  const opts = ['<option value="date-asc">Issued date</option>'];
   if(config.columns.some(c => c.key === 'name')) opts.push('<option value="name-asc">Name (A\u2013Z)</option>');
-  if(config.columns.some(c => c.key === 'submitted')) opts.push('<option value="month-asc">Month submitted</option>');
+  if(config.columns.some(c => c.key === 'submitted')) opts.push('<option value="date-asc">Issued date</option>');
+  if(config.columns.some(c => c.key === 'plan')) opts.push('<option value="plan-asc">By Plan</option>');
+  if(config.columns.some(c => c.key === 'mode')) opts.push('<option value="mode-asc">By Mode</option>');
   if(config.columns.some(c => c.key === 'ape')) opts.push('<option value="ape-desc">Highest APE</option>');
   return opts.join('');
 }
 
+const leadSortState = {};
+const leadViewState = {};
+const servicingViewState = {};
+function setLeadView(id, view){
+  leadViewState[id] = view;
+  document.getElementById(id + '-tab-all')?.classList.toggle('active', view === 'all');
+  document.getElementById(id + '-tab-nurture')?.classList.toggle('active', view === 'nurture');
+  document.getElementById(id + '-tab-longterm')?.classList.toggle('active', view === 'longterm');
+  document.getElementById(id + '-push-pull-note')?.classList.toggle('visible', view === 'nurture');
+  renderLeadTable(id);
+}
+function leadDateValue(row){
+  return row.contactStarted ? new Date(row.contactStarted + 'T00:00:00') : row.dateAdded ? new Date(row.dateAdded) : new Date(row.ts || 0);
+}
+function leadDateLabel(row){
+  const date = leadDateValue(row);
+  return date.getTime() ? date.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '';
+}
+function leadDaysSince(row){
+  const date = leadDateValue(row);
+  if(!date.getTime()) return '';
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / 86400000));
+}
+function leadRemark(status){
+  return status === 'App Submitted' || status === 'Issued' ? 'Nurture Client' : 'Followup';
+}
+function nextLeadMove(lastMove){
+  if(lastMove === 'Push') return 'Pull';
+  if(lastMove === 'Pull') return 'Push';
+  return '';
+}
+function nurtureFocus(days){
+  if(days <= 1) return { move:'Push', text:'Start & discover' };
+  if(days === 2) return { move:'Pull', text:'Give space' };
+  if(days === 3) return { move:'Push', text:'Educate' };
+  if(days === 4) return { move:'Pull', text:'' };
+  if(days === 5) return { move:'Push', text:'Invite to assessment' };
+  if(days === 6) return { move:'Pull', text:'' };
+  if(days === 7) return { move:'Push', text:'Give value' };
+  if(days === 8) return { move:'Pull', text:'' };
+  if(days <= 10) return { move:'Push', text:'Build trust + recommend' };
+  if(days === 11) return { move:'Pull', text:'Let them think' };
+  if(days === 12) return { move:'Push', text:'Ask for decision' };
+  if(days === 13) return { move:'Pull', text:'Remove pressure' };
+  return { move:'Both', text:'Close the loop' };
+}
+function nurtureFocusHtml(row){
+  const focus = nurtureFocus(leadDaysSince(row));
+  if(focus.move === 'Both') return `<span class="move-badge move-push">PUSH</span><span class="move-badge move-pull">PULL</span> — ${focus.text}`;
+  return `${moveBadge(focus.move)}${focus.text ? ` — ${focus.text}` : ''}`;
+}
+function moveBadge(move){
+  if(!move) return '<span class="lead-detail-value empty">Not set</span>';
+  const className = move.toLowerCase() === 'push' ? 'move-push' : 'move-pull';
+  return `<span class="move-badge ${className}">${move}</span>`;
+}
+function needsNurture(row){
+  const days = leadDaysSince(row);
+  return days !== '' && days >= 0 && days <= 14;
+}
+function needsLongTermNurture(row){
+  const days = leadDaysSince(row);
+  return days !== '' && days >= 15;
+}
+function setLeadSort(id, value){
+  leadSortState[id] = value;
+  renderLeadTable(id);
+}
+async function renderLeadTable(id){
+  const entries = await getEntries(id);
+  document.getElementById(id + '-push-pull-note')?.classList.toggle('visible', leadViewState[id] === 'nurture');
+  const visibleEntries = leadViewState[id] === 'nurture'
+    ? entries.filter(needsNurture)
+    : leadViewState[id] === 'longterm'
+      ? entries.filter(needsLongTermNurture)
+      : entries;
+  const listEl = document.getElementById(id + '-list');
+  const bcount = document.getElementById('bcount-' + id);
+  if(bcount) bcount.textContent = entries.length;
+  const sortMode = leadSortState[id] || 'date-desc';
+  const sorted = [...visibleEntries].sort((a, b) => {
+    if(sortMode === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+    if(sortMode === 'source-asc') return (a.source || '').localeCompare(b.source || '');
+    if(sortMode === 'status-asc') return (a.status || '').localeCompare(b.status || '');
+    return leadDateValue(b) - leadDateValue(a);
+  });
+  const sortSelect = document.getElementById(id + '-sort');
+  if(sortSelect) sortSelect.value = sortMode;
+  listEl.innerHTML = sorted.length ? `
+    <div class="table-scroll"><table class="data-table"><thead><tr>
+      <th>Contact Started</th><th>Days Since Contact Started</th><th>Name of Lead</th><th>Source</th><th>Proposed APE</th><th>Status</th>${leadViewState[id] === 'nurture' ? '<th>Focus</th>' : ''}<th>Next Move</th><th>Remarks</th><th></th>
+    </tr></thead><tbody>${sorted.map(row => {
+      const idx = entries.indexOf(row);
+      return `<tr><td>${leadDateLabel(row)}</td><td>${leadDaysSince(row)}</td><td><button class="lead-name-link" onclick="openLeadDetails('${id}', ${idx})">${escapeHtml(row.name || 'Unnamed lead')}</button></td><td>${escapeHtml(row.source || '')}</td><td class="num">${fmtCurrency(parseCurrency(row.ape))}</td><td><span class="status-pill status-${(row.status || '').replace(' ','\\ ')}">${escapeHtml(row.status || '')}</span></td>${leadViewState[id] === 'nurture' ? `<td>${nurtureFocusHtml(row)}</td>` : ''}<td>${moveBadge(nextLeadMove(row.lastMove))}</td><td class="lead-remark">${leadRemark(row.status)}</td><td><button class="row-del" onclick="editLeadRow('${id}', ${idx})">Edit</button>&nbsp;&nbsp;<button class="row-del" onclick="duplicateLeadRow('${id}', ${idx})">Duplicate</button>&nbsp;&nbsp;<button class="row-del" onclick="deleteEntry('${id}', ${idx})">Remove</button></td></tr>`;
+    }).join('')}</tbody></table></div>` : '<div class="empty">No leads yet — add your first lead above.</div>';
+  await renderGroupCount(idToGroup(id));
+}
+
+function setServicingView(id, view){
+  servicingViewState[id] = view;
+  ['all','own','adopted'].forEach(key => document.getElementById(id + '-tab-' + key)?.classList.toggle('active', view.toLowerCase() === key));
+  renderServicingTable(id);
+}
+async function renderServicingTable(id){
+  const entries = await getEntries(id);
+  const view = servicingViewState[id] || 'all';
+  const visible = view === 'all' ? entries : entries.filter(row => (row.servicingType || 'Own') === view);
+  const listEl = document.getElementById(id + '-list');
+  const bcount = document.getElementById('bcount-' + id);
+  if(bcount) bcount.textContent = entries.length;
+  listEl.innerHTML = visible.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Client Name</th><th>Issued Date</th><th>Type</th><th>Plan</th><th>Mode</th><th>Status</th><th>Contact Link</th><th>Notes</th><th></th></tr></thead><tbody>${visible.map(row => {
+    const idx = entries.indexOf(row);
+    return `<tr><td>${escapeHtml(row.name || '')}</td><td>${escapeHtml(fmtIssuedDate(row.issuedDate || row.submitted || ''))}</td><td>${escapeHtml(row.servicingType || 'Own')}</td><td>${escapeHtml(row.plan || '')}</td><td>${escapeHtml(row.mode || '')}</td><td><span class="status-pill status-${(row.status || 'Issued').replace(' ','\\ ')}">${escapeHtml(row.status || 'Issued')}</span></td><td>${contactHref(row.contactLink) ? `<a class="contact-link" href="${escapeHtml(contactHref(row.contactLink))}" target="_blank" rel="noopener">Open Link</a>` : ''}</td><td>${escapeHtml(row.notes || '')}</td><td><button class="row-del" onclick="editServicingEntry('${id}', ${idx})">Edit</button>&nbsp;&nbsp;<button class="row-del" onclick="deleteEntry('${id}', ${idx})">Remove</button></td></tr>`;
+  }).join('')}</tbody></table></div>` : '<div class="empty">No clients in this view yet.</div>';
+  await renderGroupCount(idToGroup(id));
+}
+async function addServicingEntry(id){
+  const entries = await getEntries(id);
+  const editing = editState[id];
+  const row = {
+    name: document.getElementById(id + '-f-name').value.trim(),
+    issuedDate: document.getElementById(id + '-f-issuedDate').value,
+    servicingType: document.getElementById(id + '-f-servicingType').value,
+    contactLink: document.getElementById(id + '-f-contactLink').value.trim(),
+    notes: document.getElementById(id + '-f-notes').value.trim()
+  };
+  if(!row.name) return;
+  if(editing != null && entries[editing]) entries[editing] = { ...entries[editing], ...row };
+  else { row.ts = Date.now(); entries.push(row); }
+  if(await saveEntries(id, entries)){
+    ['name','issuedDate','contactLink','notes'].forEach(key => { document.getElementById(id + '-f-' + key).value = ''; });
+    clearEditMode(id, 'Add client');
+  }
+  await refreshAfterClientChange(id);
+}
+async function editServicingEntry(id, idx){
+  const row = (await getEntries(id))[idx];
+  if(!row) return;
+  document.getElementById(id + '-f-name').value = row.name || '';
+  document.getElementById(id + '-f-issuedDate').value = row.issuedDate || row.submitted || '';
+  document.getElementById(id + '-f-servicingType').value = row.servicingType || 'Own';
+  document.getElementById(id + '-f-contactLink').value = row.contactLink || '';
+  document.getElementById(id + '-f-notes').value = row.notes || '';
+  setEditMode(id, idx, 'Save changes');
+}
+function cancelServicingEdit(id){
+  ['name','issuedDate','contactLink','notes'].forEach(key => { document.getElementById(id + '-f-' + key).value = ''; });
+  clearEditMode(id, 'Add client');
+}
+
+function leadFieldValue(id, col){
+  const field = document.getElementById(id + '-f-' + col.key);
+  if(!field) return '';
+  if(col.type === 'checklist') return [...field.selectedOptions].map(option => option.value);
+  return field.value.trim();
+}
+function setLeadFieldValue(id, col, value){
+  const field = document.getElementById(id + '-f-' + col.key);
+  if(!field) return;
+  if(col.type === 'checklist'){
+    const values = Array.isArray(value) ? value : [];
+    [...field.options].forEach(option => { option.selected = values.includes(option.value); });
+  }else field.value = value || '';
+}
+async function addLeadRow(id){
+  const config = TABLE_LEAVES[id];
+  const noteEl = document.getElementById(id + '-savenote');
+  const row = {};
+  config.columns.forEach(col => { row[col.key] = leadFieldValue(id, col); });
+  if(!row.name){ noteEl.textContent = 'Add the lead name first.'; noteEl.style.color = 'var(--red)'; return; }
+  const entries = await getEntries(id);
+  const editing = editState[id];
+  if(editing != null && entries[editing]) entries[editing] = { ...entries[editing], ...row };
+  else { row.ts = Date.now(); row.dateAdded = new Date().toISOString(); entries.push(row); }
+  const ok = await saveEntries(id, entries);
+  if(ok){
+    config.columns.forEach(col => setLeadFieldValue(id, col, ''));
+    noteEl.textContent = editing != null ? 'Changes saved.' : 'Saved.';
+    noteEl.style.color = 'var(--ink-soft)';
+    if(editing != null) clearEditMode(id, 'Add lead');
+  }else{ noteEl.textContent = 'Could not save' + (window.lastFbError ? ' — ' + window.lastFbError : ' — please try again.'); noteEl.style.color = 'var(--red)'; }
+  if(ok && row.status === 'Issued') await moveIssuedLeadToServicing(editing != null ? entries[editing] : row);
+  await refreshAfterClientChange(id);
+}
+async function moveIssuedLeadToServicing(lead){
+  const servicing = await getEntries('pru-servicing');
+  const sourceKey = lead.ts || `${lead.name}|${lead.contactStarted || ''}`;
+  if(servicing.some(client => client.sourceLeadKey === sourceKey)) return;
+  servicing.push({
+    ...lead,
+    name: lead.name,
+    issuedDate: lead.contactStarted || new Date().toISOString().slice(0, 10),
+    servicingType: 'Own',
+    status: 'Issued',
+    notes: `Moved from Pru Leads${lead.lastContact ? ` · Last contact ${lead.lastContact}` : ''}`,
+    sourceLeadKey: sourceKey,
+    ts: Date.now()
+  });
+  await saveEntries('pru-servicing', servicing);
+  const leads = await getEntries('pru-leads');
+  const index = leads.findIndex(item => (item.ts || `${item.name}|${item.contactStarted || ''}`) === sourceKey);
+  if(index >= 0){ leads.splice(index, 1); await saveEntries('pru-leads', leads); }
+}
+async function migrateExistingIssuedLeads(){
+  const leads = await getEntries('pru-leads');
+  const issued = leads.filter(row => row.status === 'Issued');
+  for(const lead of issued) await moveIssuedLeadToServicing(lead);
+}
+async function syncClientsToServicing(){
+  const clients = await getEntries('pru-clients');
+  const servicing = await getEntries('pru-servicing');
+  let changed = false;
+  for(const client of clients){
+    const sourceKey = client.ts || `${client.name}|${client.submitted || ''}`;
+    const existing = servicing.find(entry =>
+      entry.sourceClientKey === sourceKey ||
+      (!entry.sourceClientKey && entry.name === client.name && (entry.issuedDate || entry.submitted || '') === (client.submitted || ''))
+    );
+    if(existing){
+      Object.assign(existing, client, {
+        issuedDate: client.submitted || '',
+        servicingType: client.clientType || existing.servicingType || 'Own',
+        sourceClientKey: sourceKey
+      });
+      changed = true;
+      continue;
+    }
+    servicing.push({
+      ...client,
+      issuedDate: client.submitted || '',
+      servicingType: client.clientType || 'Own',
+      sourceClientKey: sourceKey,
+      ts: Date.now() + Math.random()
+    });
+    changed = true;
+  }
+  if(changed) await saveEntries('pru-servicing', servicing);
+}
+async function syncServicingToClients(){
+  const servicing = await getEntries('pru-servicing');
+  const clients = await getEntries('pru-clients');
+  let changed = false;
+  for(const service of servicing.filter(row => row.status === 'Issued')){
+    const sourceKey = service.sourceClientKey || service.sourceLeadKey || `servicing:${service.ts || `${service.name}|${service.issuedDate || ''}`}`;
+    const existing = clients.find(client => client.sourceServicingKey === sourceKey || client.ts === service.ts || (client.name === service.name && (client.submitted || '') === (service.issuedDate || '')));
+    const clientData = {
+      ...service,
+      name: service.name || '',
+      submitted: service.issuedDate || service.submitted || '',
+      status: 'Issued',
+      clientType: service.servicingType || service.clientType || 'Own',
+      sourceServicingKey: sourceKey,
+      ts: existing?.ts || Date.now() + Math.random()
+    };
+    if(existing) Object.assign(existing, clientData);
+    else clients.push(clientData);
+    changed = true;
+  }
+  if(changed) await saveEntries('pru-clients', clients);
+}
+async function editLeadRow(id, idx){
+  const entries = await getEntries(id); const row = entries[idx]; if(!row) return;
+  TABLE_LEAVES[id].columns.forEach(col => setLeadFieldValue(id, col, row[col.key]));
+  setEditMode(id, idx, 'Save changes');
+  document.getElementById(id + '-f-name').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+async function duplicateLeadRow(id, idx){
+  const entries = await getEntries(id);
+  const row = entries[idx];
+  if(!row) return;
+  entries.push({ ...row, ts: Date.now(), dateAdded: new Date().toISOString(), contactStarted: new Date().toISOString().slice(0, 10), lastContact: '' });
+  await saveEntries(id, entries);
+  await refreshAfterClientChange(id);
+}
+function cancelLeadEdit(id){
+  TABLE_LEAVES[id].columns.forEach(col => setLeadFieldValue(id, col, ''));
+  clearEditMode(id, 'Add lead');
+}
+async function openLeadDetails(id, idx){
+  const entries = await getEntries(id); const row = entries[idx]; if(!row) return;
+  const config = TABLE_LEAVES[id];
+  const modal = document.getElementById(id + '-detail-modal');
+  const content = document.getElementById(id + '-detail-content');
+  document.getElementById(id + '-detail-title').textContent = row.name || 'Lead Details';
+  content.innerHTML = `<div class="lead-detail-grid">${[
+    ['Contact Started', leadDateLabel(row)], ['Last Contact', row.lastContact ? fmtIssuedDate(row.lastContact) : ''], ['Name of Lead', row.name], ['Age', row.age], ['Source', row.source], ['Occupation', row.occupation],
+    ['Contact Number', row.contact], ['Email Address', row.email], ['Proposed APE', fmtCurrency(parseCurrency(row.ape))], ['Proposed Plan', row.plan],
+    ['Status', row.status], ['Need', Array.isArray(row.need) ? row.need.join(', ') : row.need], ['Remarks', leadRemark(row.status)]
+  ].map(([label, value]) => `<div class="lead-detail-item"><div class="lead-detail-label">${label}</div><div class="lead-detail-value ${value ? '' : 'empty'}">${escapeHtml(value || 'Not provided')}</div></div>`).join('')}
+    <div class="lead-detail-item"><div class="lead-detail-label">Contact Link</div><div class="lead-detail-value">${contactHref(row.contactLink) ? `<a class="contact-link" href="${escapeHtml(contactHref(row.contactLink))}" target="_blank" rel="noopener">Open Contact Link</a>` : '<span class="empty">Not provided</span>'}</div></div>
+    <div class="lead-detail-item"><div class="lead-detail-label">Last Move</div><div class="lead-detail-value">${moveBadge(row.lastMove)}</div></div>
+    <div class="lead-detail-item"><div class="lead-detail-label">Next Move</div><div class="lead-detail-value">${moveBadge(nextLeadMove(row.lastMove))}</div></div>
+  </div>`;
+  modal.classList.add('open');
+}
+function closeLeadDetails(id){ const modal = document.getElementById(id + '-detail-modal'); if(modal) modal.classList.remove('open'); }
+
 async function renderTable(id){
   const config = TABLE_LEAVES[id];
-  const entries = await getEntries(id);
+  const allEntries = await getEntries(id);
+  const entries = id === 'pru-clients' && clientYearFilter !== 'all'
+    ? allEntries.filter(row => {
+        const issuedDate = submittedDateFromMonth(row.submitted, 2026);
+        return issuedDate && issuedDate.getFullYear() === Number(clientYearFilter);
+      })
+    : allEntries;
+  const fypAsOfDate = new Date();
   const listEl = document.getElementById(id + '-list');
   const totalsEl = document.getElementById(id + '-totals');
   const bcount = document.getElementById('bcount-' + id);
@@ -1421,37 +2202,68 @@ async function renderTable(id){
   entries.forEach(row => {
     config.totalKeys.forEach(k => {
       const col = config.columns.find(c => c.key === k);
-      totals[k] += (col && col.type === 'computed') ? col.compute(row) : parseCurrency(row[k]);
+      totals[k] += (col && col.type === 'computed') ? clientFYP(row, fypAsOfDate) : parseCurrency(row[k]);
     });
   });
   if(totalsEl){
+    const currentYear = new Date().getFullYear();
+    const issuedEntries = entries.filter(row => !row.status || row.status === 'Issued');
+    const ytdEntries = issuedEntries.filter(row => {
+      const issuedDate = submittedDateFromMonth(row.submitted, 2026);
+      return issuedDate && issuedDate.getFullYear() === currentYear;
+    }).length;
+    const ytdRows = issuedEntries.filter(row => {
+      const issuedDate = submittedDateFromMonth(row.submitted, 2026);
+      return issuedDate && issuedDate.getFullYear() === currentYear;
+    });
+    const sumRows = (rows, key) => rows.reduce((sum, row) => sum + parseCurrency(row[key]), 0);
+    const ytdAPE = sumRows(ytdRows, 'ape');
+    const ytdPremium = sumRows(ytdRows, 'premium');
+    const ytdSA = sumRows(ytdRows, 'sa');
+    const totalAPE = sumRows(issuedEntries, 'ape');
+    const totalPremium = sumRows(issuedEntries, 'premium');
+    const totalSA = sumRows(issuedEntries, 'sa');
+    const ownCount = issuedEntries.filter(row => (row.clientType || 'Own') === 'Own').length;
+    const adoptedCount = issuedEntries.filter(row => row.clientType === 'Adopted').length;
     totalsEl.innerHTML = `
-      <div class="totals-summary">
-        ${config.totalKeys.map(k => {
-          const col = config.columns.find(c => c.key === k);
-          return `
-            <div class="totals-box">
-              <div class="tb-label">Total ${col.label}</div>
-              <div class="tb-value">${fmtCurrency(totals[k])}</div>
-            </div>`;
-        }).join('')}
+      <div class="client-metrics">
+        <div class="client-metrics-primary">
+          <div class="client-metric"><div class="client-metric-label">YTD Total No. of Clients</div><div class="client-metric-value">${ytdEntries}</div></div>
+          <div class="client-metric"><div class="client-metric-label">YTD Total APE</div><div class="client-metric-value">${fmtCurrency(ytdAPE)}</div></div>
+          <div class="client-metric"><div class="client-metric-label">FYP</div><div class="client-metric-value">${fmtCurrency(issuedEntries.reduce((sum, row) => sum + clientFYP(row, fypAsOfDate), 0))}</div></div>
+          <div class="client-metric"><div class="client-metric-label">YTD Total Premium</div><div class="client-metric-value">${fmtCurrency(ytdPremium)}</div></div>
+          <div class="client-metric"><div class="client-metric-label">YTD Total SA</div><div class="client-metric-value">${fmtCurrency(ytdSA)}</div></div>
+        </div>
+        <div class="client-metrics-secondary">
+          <div class="client-metric secondary"><div class="client-metric-label">Active Clients</div><div class="client-metric-value">${ownCount + adoptedCount}</div></div>
+          <div class="client-metric secondary"><div class="client-metric-label">Adopted Clients</div><div class="client-metric-value">${adoptedCount}</div></div>
+          <div class="client-metric secondary"><div class="client-metric-label">Own Clients</div><div class="client-metric-value">${ownCount}</div></div>
+          <div class="client-metric secondary"><div class="client-metric-label">Total APE Since Inception</div><div class="client-metric-value">${fmtCurrency(totalAPE)}</div></div>
+          <div class="client-metric secondary"><div class="client-metric-label">Total Premium Since Inception</div><div class="client-metric-value">${fmtCurrency(totalPremium)}</div></div>
+          <div class="client-metric secondary"><div class="client-metric-label">Total SA Since Inception</div><div class="client-metric-value">${fmtCurrency(totalSA)}</div></div>
+        </div>
       </div>`;
   }
 
   if(entries.length === 0){
     listEl.innerHTML = `<div class="empty">No entries yet — add your first client above.</div>`;
     await renderGroupCount(idToGroup(id));
+    if(id === 'pru-clients') await renderRewardsPanel();
     return;
   }
 
-  const sortMode = sortState[id] || 'default';
+  const sortMode = sortState[id] || 'date-asc';
   const sorted = [...entries].sort((a, b) => {
     if(sortMode === 'name-asc'){
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     }
-    if(sortMode === 'month-asc'){
-      return MONTHS.indexOf(a.submitted) - MONTHS.indexOf(b.submitted);
+    if(sortMode === 'date-asc'){
+      const aDate = submittedDateFromMonth(a.submitted, 2026);
+      const bDate = submittedDateFromMonth(b.submitted, 2026);
+      return (aDate ? aDate.getTime() : 0) - (bDate ? bDate.getTime() : 0);
     }
+    if(sortMode === 'plan-asc') return (a.plan || '').localeCompare(b.plan || '');
+    if(sortMode === 'mode-asc') return (a.mode || '').localeCompare(b.mode || '');
     if(sortMode === 'ape-desc'){
       return parseCurrency(b.ape) - parseCurrency(a.ape);
     }
@@ -1460,6 +2272,8 @@ async function renderTable(id){
 
   const sortSelect = document.getElementById(id + '-sort');
   if(sortSelect) sortSelect.value = sortMode;
+  const yearSelect = document.getElementById(id + '-year');
+  if(yearSelect) yearSelect.value = clientYearFilter;
 
   const headCells = config.columns.map(c => `<th>${c.label}</th>`).join('') + '<th></th>';
   const bodyRows = sorted.map(row => {
@@ -1467,10 +2281,17 @@ async function renderTable(id){
     const cells = config.columns.map(c => {
       const v = row[c.key];
       if(c.type === 'computed'){
-        return `<td class="num">${fmtCurrency(c.compute(row))}</td>`;
+        return `<td class="num">${fmtCurrency(clientFYP(row, fypAsOfDate))}</td>`;
       }
       if(c.type === 'currency'){
         return `<td class="num">${fmtCurrency(parseCurrency(v))}</td>`;
+      }
+      if(c.type === 'date'){
+        return `<td>${escapeHtml(fmtIssuedDate(v || ''))}</td>`;
+      }
+      if(c.type === 'url'){
+        const href = contactHref(v);
+        return `<td>${href ? `<a class="contact-link" href="${escapeHtml(href)}" target="_blank" rel="noopener">Open Link</a>` : ''}</td>`;
       }
       if(c.key === 'status' && v){
         return `<td><span class="status-pill status-${v.replace(' ','\\ ')}">${escapeHtml(v)}</span></td>`;
@@ -1514,15 +2335,28 @@ async function renderGroupCount(groupId){
 }
 
 async function renderAllCounts(){
-  for(const g of GROUPS){
-    for(const item of g.items){
-      if(item.url) continue;
+  await Promise.all(GROUPS.map(async g => {
+    await Promise.all(g.items.filter(item => !item.url).map(async item => {
       const entries = await getEntries(item.id);
       const bcount = document.getElementById('bcount-' + item.id);
       if(bcount) bcount.textContent = entries.length;
-    }
+    }));
     await renderGroupCount(g.id);
+  }));
+}
+
+async function refreshAfterClientChange(id){
+  if(id === 'pru-clients'){
+    await syncClientsToServicing();
+    await renderList('pru-servicing');
   }
+  if(id === 'pru-servicing'){
+    await syncServicingToClients();
+    await renderList('pru-clients');
+  }
+  await renderList(id);
+  await renderAllCounts();
+  if(id === 'pru-clients') await renderRewardsPanel();
 }
 
 /* ---------- edit-mode helpers ---------- */
@@ -1549,6 +2383,7 @@ function cancelEdit(id){
     document.getElementById(id + '-title').value = '';
     document.getElementById(id + '-date').value = '';
     document.getElementById(id + '-value').value = '';
+    document.getElementById(id + '-contact-link').value = '';
     document.getElementById(id + '-notes').value = '';
     clearEditMode(id, 'Add entry');
   }
@@ -1561,10 +2396,11 @@ async function addEntry(id){
   const title = document.getElementById(id + '-title').value.trim();
   const date = document.getElementById(id + '-date').value;
   const value = document.getElementById(id + '-value').value.trim();
+  const contactLink = document.getElementById(id + '-contact-link').value.trim();
   const notes = document.getElementById(id + '-notes').value.trim();
   const noteEl = document.getElementById(id + '-savenote');
 
-  if(!title && !value && !notes){
+  if(!title && !value && !notes && !contactLink){
     noteEl.textContent = 'Add at least a title, value, or note first.';
     noteEl.style.color = 'var(--red)';
     return;
@@ -1573,9 +2409,9 @@ async function addEntry(id){
   const entries = await getEntries(id);
   const editing = editState[id];
   if(editing != null && entries[editing]){
-    entries[editing] = { ...entries[editing], title, date, value, notes };
+    entries[editing] = { ...entries[editing], title, date, value, contactLink, notes };
   }else{
-    entries.push({ title, date, value, notes, ts: Date.now() });
+    entries.push({ title, date, value, contactLink, notes, ts: Date.now() });
   }
   const ok = await saveEntries(id, entries);
 
@@ -1583,6 +2419,7 @@ async function addEntry(id){
     document.getElementById(id + '-title').value = '';
     document.getElementById(id + '-date').value = '';
     document.getElementById(id + '-value').value = '';
+    document.getElementById(id + '-contact-link').value = '';
     document.getElementById(id + '-notes').value = '';
     noteEl.textContent = editing != null ? 'Changes saved.' : 'Saved.';
     noteEl.style.color = 'var(--ink-soft)';
@@ -1602,6 +2439,7 @@ async function editEntry(id, idx){
   document.getElementById(id + '-title').value = e.title || '';
   document.getElementById(id + '-date').value = e.date || '';
   document.getElementById(id + '-value').value = e.value || '';
+  document.getElementById(id + '-contact-link').value = e.contactLink || '';
   document.getElementById(id + '-notes').value = e.notes || '';
   setEditMode(id, idx, 'Save changes');
   document.getElementById(id + '-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1648,7 +2486,7 @@ async function addTableRow(id){
     noteEl.textContent = 'Could not save' + (window.lastFbError ? ' — ' + window.lastFbError : ' — please try again.');
     noteEl.style.color = 'var(--red)';
   }
-  renderList(id);
+  await refreshAfterClientChange(id);
 }
 
 async function editTableRow(id, idx){
@@ -1658,7 +2496,8 @@ async function editTableRow(id, idx){
   if(!row) return;
   config.columns.forEach(col => {
     if(col.type === 'computed') return;
-    document.getElementById(id + '-f-' + col.key).value = row[col.key] || '';
+    const value = col.type === 'date' ? dateInputValue(row[col.key]) : row[col.key];
+    document.getElementById(id + '-f-' + col.key).value = value || '';
   });
   setEditMode(id, idx, 'Save changes');
   document.getElementById(id + '-f-' + config.columns[0].key).scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1666,26 +2505,89 @@ async function editTableRow(id, idx){
 
 async function deleteEntry(id, idx){
   const entries = await getEntries(id);
+  const record = entries[idx];
+  if(!record) return;
+  const linked = [];
+  if(id === 'pru-clients'){
+    const servicing = await getEntries('pru-servicing');
+    const match = servicing.filter(item => item.sourceClientKey === (record.ts || '') || item.name === record.name);
+    match.forEach(item => linked.push({ sectionId:'pru-servicing', record:item }));
+  }else if(id === 'pru-servicing'){
+    const clients = await getEntries('pru-clients');
+    const match = clients.filter(item => item.sourceServicingKey === (record.sourceClientKey || '') || item.ts === record.ts || item.name === record.name);
+    match.forEach(item => linked.push({ sectionId:'pru-clients', record:item }));
+  }
+  const archived = await archiveTrash(id, [record], linked);
+  if(!archived) return;
   entries.splice(idx, 1);
   await saveEntries(id, entries);
-  renderList(id);
+  for(const item of linked){
+    const other = await getEntries(item.sectionId);
+    const otherIndex = other.indexOf(item.record);
+    if(otherIndex >= 0){ other.splice(otherIndex, 1); await saveEntries(item.sectionId, other); }
+  }
+  await Promise.all(['pru-clients','pru-servicing'].filter(sectionId => sectionId !== id).map(sectionId => renderList(sectionId)));
+  await refreshAfterClientChange(id);
 }
 
 async function clearEntries(id){
   if(!confirm('Remove all entries in this section? This cannot be undone.')) return;
+  const entries = await getEntries(id);
+  if(!(await archiveTrash(id, entries))) return;
   await saveEntries(id, []);
-  renderList(id);
+  await refreshAfterClientChange(id);
+}
+
+async function archiveTrash(sectionId, records, linked = []){
+  if(!records || !records.length) return true;
+  const trash = await getEntries('__trash__');
+  records.filter(Boolean).forEach(record => trash.push({ sectionId, record, deletedAt: new Date().toISOString(), trashId: `${sectionId}-${Date.now()}-${Math.random()}` }));
+  linked.forEach(item => trash.push({ sectionId:item.sectionId, record:item.record, deletedAt: new Date().toISOString(), trashId: `${item.sectionId}-${Date.now()}-${Math.random()}` }));
+  const ok = await saveEntries('__trash__', trash);
+  if(!ok) window.lastFbError = window.lastFbError || 'Trash could not be saved';
+  return ok;
+}
+async function openTrash(){
+  const modal = document.getElementById('trash-modal');
+  if(!modal) return;
+  await renderTrash();
+  modal.classList.add('open');
+}
+function closeTrash(){ document.getElementById('trash-modal')?.classList.remove('open'); }
+async function renderTrash(){
+  const list = document.getElementById('trash-list');
+  if(!list) return;
+  const trash = await getEntries('__trash__');
+  list.innerHTML = trash.length ? trash.map((item, idx) => `
+    <div class="trash-item"><div><div class="trash-item-title">${escapeHtml(item.record.name || item.record.title || 'Deleted record')}</div><div class="trash-item-meta">${escapeHtml(item.sectionId)} · deleted ${new Date(item.deletedAt).toLocaleString()}</div></div><button class="primary" onclick="restoreTrash(${idx})">Restore</button></div>`).join('') : '<div class="empty">Trash is empty.</div>';
+}
+async function restoreTrash(index){
+  const trash = await getEntries('__trash__');
+  const item = trash[index];
+  if(!item) return;
+  const records = await getEntries(item.sectionId);
+  records.push(item.record);
+  await saveEntries(item.sectionId, records);
+  trash.splice(index, 1);
+  await saveEntries('__trash__', trash);
+  await refreshAfterClientChange(item.sectionId);
+  await renderTrash();
+}
+async function emptyTrash(){
+  if(!confirm('Permanently empty Trash? This cannot be undone.')) return;
+  await saveEntries('__trash__', []);
+  await renderTrash();
 }
 
 /* ---------- init ---------- */
 async function seedIfEmpty(){
-  for(const id in SEED_DATA){
+  await Promise.all(Object.entries(SEED_DATA).map(async ([id, rows]) => {
     const existing = await getEntries(id);
     if(existing.length === 0){
-      const seeded = SEED_DATA[id].map(row => ({ ...row, ts: Date.now() + Math.random() }));
+      const seeded = rows.map(row => ({ ...row, ts: Date.now() + Math.random() }));
       await saveEntries(id, seeded);
     }
-  }
+  }));
 }
 
 function renderTodayBadge(){
@@ -1701,13 +2603,14 @@ window.initApp = async function initApp(){
   renderBoxGrid();
   renderView();
   await primeCache();
+  await Promise.all(allLeafIds().map(id => renderList(id)));
+  await renderAllCounts();
+
   await seedIfEmpty();
-  for(const g of GROUPS){
-    for(const item of g.items){
-      if(item.url) continue;
-      await renderList(item.id);
-    }
-  }
+  await migrateExistingIssuedLeads();
+  await syncClientsToServicing();
+  await syncServicingToClients();
+  await Promise.all(['pru-clients','pru-leads','pru-servicing'].map(id => renderList(id)));
   await renderAllCounts();
   await renderRewardsPanel();
 };
