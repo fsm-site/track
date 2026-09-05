@@ -2596,11 +2596,11 @@ async function deleteEntry(id, idx){
 }
 
 async function removeFromTrashByRecord(sectionId, record){
-  const trash = await getEntries('__trash__');
+  const trash = await getEntries('pru-trash');
   const index = trash.findIndex(item => item.sectionId === sectionId && item.record === record);
   if(index >= 0){
     trash.splice(index, 1);
-    await saveEntries('__trash__', trash);
+    await saveEntries('pru-trash', trash);
   }
 }
 
@@ -2611,9 +2611,9 @@ async function clearEntries(id){
   const ok = await saveEntries(id, []);
   if(!ok){
     // Undo the trash copy so a failed clear doesn't leave duplicates behind.
-    const trash = await getEntries('__trash__');
+    const trash = await getEntries('pru-trash');
     const remaining = trash.filter(item => !(item.sectionId === id && entries.includes(item.record)));
-    await saveEntries('__trash__', remaining);
+    await saveEntries('pru-trash', remaining);
     showDeleteError(id, 'Could not clear entries' + (window.lastFbError ? ' — ' + window.lastFbError : ' — please try again.'));
     return;
   }
@@ -2622,10 +2622,10 @@ async function clearEntries(id){
 
 async function archiveTrash(sectionId, records, linked = []){
   if(!records || !records.length) return true;
-  const trash = await getEntries('__trash__');
+  const trash = await getEntries('pru-trash');
   records.filter(Boolean).forEach(record => trash.push({ sectionId, record, deletedAt: new Date().toISOString(), trashId: `${sectionId}-${Date.now()}-${Math.random()}` }));
   linked.forEach(item => trash.push({ sectionId:item.sectionId, record:item.record, deletedAt: new Date().toISOString(), trashId: `${item.sectionId}-${Date.now()}-${Math.random()}` }));
-  const ok = await saveEntries('__trash__', trash);
+  const ok = await saveEntries('pru-trash', trash);
   if(!ok) window.lastFbError = window.lastFbError || 'Trash could not be saved';
   return ok;
 }
@@ -2639,25 +2639,25 @@ function closeTrash(){ document.getElementById('trash-modal')?.classList.remove(
 async function renderTrash(){
   const list = document.getElementById('trash-list');
   if(!list) return;
-  const trash = await getEntries('__trash__');
+  const trash = await getEntries('pru-trash');
   list.innerHTML = trash.length ? trash.map((item, idx) => `
     <div class="trash-item"><div><div class="trash-item-title">${escapeHtml(item.record.name || item.record.title || 'Deleted record')}</div><div class="trash-item-meta">${escapeHtml(item.sectionId)} · deleted ${new Date(item.deletedAt).toLocaleString()}</div></div><button class="primary" onclick="restoreTrash(${idx})">Restore</button></div>`).join('') : '<div class="empty">Trash is empty.</div>';
 }
 async function restoreTrash(index){
-  const trash = await getEntries('__trash__');
+  const trash = await getEntries('pru-trash');
   const item = trash[index];
   if(!item) return;
   const records = await getEntries(item.sectionId);
   records.push(item.record);
   await saveEntries(item.sectionId, records);
   trash.splice(index, 1);
-  await saveEntries('__trash__', trash);
+  await saveEntries('pru-trash', trash);
   await refreshAfterClientChange(item.sectionId);
   await renderTrash();
 }
 async function emptyTrash(){
   if(!confirm('Permanently empty Trash? This cannot be undone.')) return;
-  await saveEntries('__trash__', []);
+  await saveEntries('pru-trash', []);
   await renderTrash();
 }
 
