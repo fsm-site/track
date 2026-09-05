@@ -852,6 +852,49 @@
   .trash-item-title{font-weight:700; color:var(--navy);}
   .trash-item-meta{font-size:11px; color:var(--ink-soft); margin-top:3px;}
   main{max-width:none; padding:38px clamp(20px,5vw,74px) 60px;}
+  .app-footer{padding:28px 0 0; margin-top:40px; border-top:1px solid var(--line); text-align:center;}
+  .app-footer button{all:unset; cursor:pointer; color:var(--ink-soft); font-size:12px; font-weight:700;}
+  .app-footer button:hover{color:var(--brass); text-decoration:underline;}
+  .statistics-view{display:none; animation:fade .24s ease; text-align:center;}
+  .statistics-view.visible{display:block;}
+  .statistics-view h2{margin:28px 0 5px; color:var(--navy); font-size:19px;}
+  .statistics-view h3{margin:18px 0 9px; color:var(--navy); font-size:15px;}
+  .statistics-view .stats-sub{margin:0 0 16px; color:var(--ink-soft); font-size:12.5px;}
+  .statistics-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px;}
+  .statistics-card{padding:20px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 5px 16px rgba(23,35,49,.025);}
+  .statistics-card h3{margin:0 0 14px;}
+  .statistics-values{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .statistics-label{color:var(--ink-soft); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.35px; line-height:1.35;}
+  .statistics-value{margin-top:7px; color:var(--navy); font-size:20px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .statistics-note{margin-top:4px; color:var(--ink-soft); font-size:10px;}
+  .statistics-table-wrap{overflow:auto; border:1px solid var(--line); border-radius:14px; background:#fff;}
+  .statistics-table{width:100%; min-width:520px; border-collapse:collapse; font-size:12.5px;}
+  .statistics-table th{background:#f0f4f1; color:var(--navy); font-size:10.5px; text-align:center; text-transform:uppercase; letter-spacing:.3px;}
+  .statistics-table th,.statistics-table td{padding:11px 13px; border-bottom:1px solid var(--line); text-align:center;}
+  .statistics-table tr:last-child td{border-bottom:0;}
+  .statistics-table td.num{text-align:center; color:var(--navy); font-weight:700; white-space:nowrap;}
+  .statistics-empty{padding:18px; color:var(--ink-soft); font-size:13px;}
+  .statistics-back{all:unset; cursor:pointer; color:var(--ink-soft); font-size:13px; display:flex; align-items:center; justify-content:center; gap:6px; margin:0 auto 14px;}
+  .statistics-back:hover{color:var(--brass);}
+  .statistics-chart-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:16px 0 8px;}
+  .statistics-chart-card{padding:20px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 5px 16px rgba(23,35,49,.025);}
+  .statistics-chart-card h3{margin:0 0 16px;}
+  .statistics-pie{width:170px; aspect-ratio:1; margin:4px auto 16px; border-radius:50%; background:var(--line);}
+  .statistics-legend{display:flex; justify-content:center; gap:18px; flex-wrap:wrap; color:var(--ink-soft); font-size:11px; font-weight:700;}
+  .statistics-legend span{display:inline-flex; align-items:center; gap:6px;}
+  .statistics-swatch{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  .statistics-bar-list{display:grid; gap:11px; text-align:left;}
+  .statistics-bar-row{display:grid; grid-template-columns:minmax(74px,1fr) 2fr auto; align-items:center; gap:9px; font-size:11px;}
+  .statistics-bar-label{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink); font-weight:700;}
+  .statistics-bar-track{height:10px; border-radius:99px; overflow:hidden; background:var(--stripe);}
+  .statistics-bar-fill{height:100%; border-radius:99px; background:var(--brass);}
+  .statistics-bar-value{color:var(--navy); font-weight:700; white-space:nowrap;}
+  .statistics-assessment{margin-top:28px; padding:20px 24px; border:1px solid var(--brass); border-radius:14px; background:linear-gradient(135deg,#fff,var(--brass-soft) 220%); color:var(--navy);}
+  .statistics-assessment h2{margin:0 0 8px; font-size:17px;}
+  .statistics-assessment p{max-width:820px; margin:0 auto; color:var(--ink); font-size:13px; line-height:1.65;}
+  @media(max-width:700px){.statistics-grid,.statistics-chart-grid{grid-template-columns:1fr;}.statistics-values{grid-template-columns:repeat(3,1fr);}.statistics-value{font-size:17px;}}
+  @media(max-width:700px){.statistics-grid{grid-template-columns:1fr;}.statistics-values{grid-template-columns:repeat(3,1fr);}.statistics-value{font-size:17px;}}
+  @media(max-width:420px){.statistics-values{grid-template-columns:1fr;}}
   @media (max-width:900px){
     .sidebar{grid-template-columns:1fr auto auto; grid-template-areas:'brand user trash' 'nav nav nav' 'today signout signout'; gap:8px 14px;}
     .sidebar #group-nav{justify-content:flex-start;}
@@ -902,6 +945,8 @@
 
     <div class="box-grid" id="box-grid"></div>
     <div id="leaf-mount"></div>
+    <div id="statistics-mount" class="statistics-view"></div>
+    <footer class="app-footer"><button type="button" onclick="openStatistics()">Statistics</button></footer>
   </main>
 </div>
 <div class="trash-modal" id="trash-modal" role="dialog" aria-modal="true" aria-labelledby="trash-title">
@@ -1193,6 +1238,27 @@ const editState = {}; // leaf id -> index currently being edited, or null
 
 let activeGroup = GROUPS[0].id;
 let activeLeaf = null; // null = showing box grid for the active group
+let statisticsOpen = false;
+const VIEW_STATE_KEY = 'bams-masterlist-view';
+
+function saveViewState(){
+  sessionStorage.setItem(VIEW_STATE_KEY, JSON.stringify({ activeGroup, activeLeaf, statisticsOpen }));
+}
+
+function restoreViewState(){
+  try{
+    const saved = JSON.parse(sessionStorage.getItem(VIEW_STATE_KEY) || 'null');
+    const group = GROUPS.find(item => item.id === saved?.activeGroup);
+    const leaf = group?.items.find(item => item.id === saved?.activeLeaf && !item.url);
+    if(group){
+      activeGroup = group.id;
+      activeLeaf = leaf ? leaf.id : null;
+    }
+    statisticsOpen = Boolean(saved?.statisticsOpen);
+  }catch(error){
+    sessionStorage.removeItem(VIEW_STATE_KEY);
+  }
+}
 
 /* ---------- storage helpers ----------
    Backed by Firestore (see the type="module" script above), scoped to the
@@ -1269,6 +1335,7 @@ function renderBoxGrid(){
 
 /* ---------- leaf detail panels ---------- */
 const leafMount = document.getElementById('leaf-mount');
+const statisticsMount = document.getElementById('statistics-mount');
 
 function escapeHtml(s){
   const d = document.createElement('div');
@@ -1422,8 +1489,13 @@ function buildTablePanel(item, groupLabel, config){
         <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">
           Sort by
           <select id="${item.id}-sort" onchange="setSort('${item.id}', this.value)" style="width:auto; padding:6px 8px; font-size:12.5px;">
-            ${buildSortOptions(config)}
+            ${buildSortOptions(config, item.id)}
           </select>
+        </label>
+        <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">
+          Search
+          <input id="${item.id}-search" type="search" placeholder="Name or keyword" onkeydown="if(event.key === 'Enter') setSearch('${item.id}')" style="width:150px; padding:6px 8px; font-size:12.5px;">
+          <button class="primary" onclick="setSearch('${item.id}')" style="padding:6px 10px; font-size:12px;">Search</button>
         </label>
         ${item.id === 'pru-clients' ? `<label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">View only
           <select id="${item.id}-year" onchange="setClientYear(this.value)" style="width:auto; padding:6px 8px; font-size:12.5px;">
@@ -1471,6 +1543,11 @@ function buildLeadPanel(item, groupLabel, config){
           <select id="${item.id}-sort" onchange="setLeadSort('${item.id}', this.value)" style="width:auto; padding:6px 8px; font-size:12.5px;">
             <option value="date-desc">Date Added</option><option value="name-asc">Name of Lead</option><option value="source-asc">Source</option><option value="status-asc">Status</option>
           </select>
+        </label>
+        <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">
+          Search
+          <input id="${item.id}-search" type="search" placeholder="Name or keyword" onkeydown="if(event.key === 'Enter') setSearch('${item.id}')" style="width:150px; padding:6px 8px; font-size:12.5px;">
+          <button class="primary" onclick="setSearch('${item.id}')" style="padding:6px 10px; font-size:12px;">Search</button>
         </label>
         <button class="clear-link" onclick="clearEntries('${item.id}')">Clear all</button>
       </div>
@@ -1530,6 +1607,17 @@ function buildServicingPanel(item, groupLabel){
       <button class="lead-view-tab" id="${item.id}-tab-own" onclick="setServicingView('${item.id}','Own')">Own</button>
       <button class="lead-view-tab" id="${item.id}-tab-adopted" onclick="setServicingView('${item.id}','Adopted')">Adopted</button>
     </div>
+    <div class="list-head"><div style="display:flex; align-items:center; gap:14px;">
+      <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">Sort by
+        <select id="${item.id}-sort" onchange="setServicingSort('${item.id}', this.value)" style="width:auto; padding:6px 8px; font-size:12.5px;">
+          <option value="date-asc">Issued date</option><option value="name-asc">Client name</option><option value="status-issued">Issued only</option><option value="status-lapsed">Lapsed only</option>
+        </select>
+      </label>
+      <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">Search
+        <input id="${item.id}-search" type="search" placeholder="Name or keyword" onkeydown="if(event.key === 'Enter') setSearch('${item.id}')" style="width:150px; padding:6px 8px; font-size:12.5px;">
+        <button class="primary" onclick="setSearch('${item.id}')" style="padding:6px 10px; font-size:12px;">Search</button>
+      </label>
+    </div></div>
     <div id="${item.id}-list"></div>`;
   return el;
 }
@@ -1818,8 +1906,137 @@ GROUPS.forEach(g => {
   });
 });
 
+function statisticsTable(rows){
+  if(!rows.length) return '<div class="statistics-table-wrap"><div class="statistics-empty">No issued clients recorded.</div></div>';
+  return `<div class="statistics-table-wrap"><table class="statistics-table"><thead><tr><th>Plan Type</th><th>Clients</th><th>APE</th><th>Average APE</th></tr></thead><tbody>${rows.map(row => `<tr><td>${escapeHtml(row.plan)}</td><td class="num">${row.clients}</td><td class="num">${fmtCurrency(row.ape)}</td><td class="num">${fmtCurrency(row.clients ? row.ape / row.clients : 0)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+async function renderStatisticsPanel(){
+  if(!statisticsMount) return;
+  const clients = await getEntries('pru-clients');
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const months = [...MONTHS];
+  const rows = clients.filter(row => !row.status || String(row.status).toLowerCase() === 'issued').map(row => ({
+    ...row,
+    statsDate: submittedDateFromMonth(row.submitted, currentYear),
+  })).filter(row => row.statsDate);
+  const own = rows.filter(row => (row.clientType || 'Own') === 'Own');
+  const adopted = rows.filter(row => (row.clientType || 'Own') === 'Adopted');
+  const ownYtd = own.filter(row => row.statsDate.getFullYear() === currentYear && row.statsDate <= today);
+  const average = values => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+  const totalApe = list => list.reduce((sum, row) => sum + parseCurrency(row.ape), 0);
+  const planRows = list => {
+    const grouped = {};
+    list.forEach(row => {
+      const plan = row.plan || 'Unspecified';
+      if(!grouped[plan]) grouped[plan] = { plan, clients:0, ape:0 };
+      grouped[plan].clients += 1;
+      grouped[plan].ape += parseCurrency(row.ape);
+    });
+    return Object.values(grouped).sort((a, b) => b.ape - a.ape);
+  };
+  const monthly = months.map((month, index) => {
+    const monthRows = ownYtd.filter(row => row.statsDate.getMonth() === index);
+    return { month, clients: monthRows.length, ape: totalApe(monthRows) };
+  });
+  const activeMonths = monthly.filter(row => row.clients > 0);
+  const yearly = {};
+  own.forEach(row => {
+    const year = row.statsDate.getFullYear();
+    if(!yearly[year]) yearly[year] = { year, clients:0, ape:0 };
+    yearly[year].clients += 1;
+    yearly[year].ape += parseCurrency(row.ape);
+  });
+  const yearlyRows = Object.values(yearly).sort((a, b) => b.year - a.year);
+  const yearlyByYear = Object.fromEntries(yearlyRows.map(row => [row.year, row]));
+  yearlyRows.forEach(row => {
+    const previous = yearlyByYear[row.year - 1];
+    row.growth = previous && previous.ape > 0 ? ((row.ape - previous.ape) / previous.ape) * 100 : null;
+  });
+  const chartBars = (list, labelKey, valueKey, formatter) => {
+    if(!list.length) return '<div class="statistics-empty">No data to chart.</div>';
+    const maximum = Math.max(...list.map(row => row[valueKey]), 1);
+    return `<div class="statistics-bar-list">${list.map(row => `<div class="statistics-bar-row"><div class="statistics-bar-label">${escapeHtml(row[labelKey])}</div><div class="statistics-bar-track"><div class="statistics-bar-fill" style="width:${(row[valueKey] / maximum) * 100}%"></div></div><div class="statistics-bar-value">${formatter(row[valueKey])}</div></div>`).join('')}</div>`;
+  };
+  const ownApe = totalApe(own);
+  const adoptedApe = totalApe(adopted);
+  const combinedApe = ownApe + adoptedApe;
+  const ownShare = combinedApe ? (ownApe / combinedApe) * 360 : 0;
+  const rewardApeRows = rows.filter(row => row.statsDate.getFullYear() === 2026);
+  const rewardApe = totalApe(rewardApeRows);
+  const rewardLadder = ACHIEVEMENTS.filter(item => item.basis !== 'fyp').sort((a, b) => a.threshold - b.threshold);
+  const achievedRewards = rewardLadder.filter(item => rewardApe >= item.threshold);
+  const nextReward = rewardLadder.find(item => rewardApe < item.threshold);
+  const highestReward = achievedRewards[achievedRewards.length - 1];
+  const travelDeadline = TRAVEL_INCENTIVES[0]?.deadline || '2026-11-30';
+  const travelDeadlineLabel = new Date(travelDeadline + 'T00:00:00').toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  const mdrtDeadlineLabel = 'December 31, 2026';
+  const assessment = nextReward
+    ? `Your 2026 issued production is ${fmtCurrency(rewardApe)} APE. You have reached ${highestReward ? highestReward.label : 'the starting line'} and are ${fmtCurrency(Math.max(0, nextReward.threshold - rewardApe))} away from ${nextReward.label}. Do not wait for motivation: schedule the next conversations, follow up daily, and track issued Own production every week.`
+    : `Your 2026 issued production is ${fmtCurrency(rewardApe)} APE, beyond the ${highestReward.label} milestone. Sustain the pace, protect your quality standard, and keep building toward the FYP-based MDRT goal.`;
+  const assessmentNotes = `Strict notes: South Korea production is counted only from August through November and the travel deadline is ${travelDeadlineLabel}. MDRT qualification is FYP-based and must be secured by ${mdrtDeadlineLabel}. A goal without weekly issued production, follow-ups, and documented next actions is only a wish.`;
+  statisticsMount.innerHTML = `
+    <button class="statistics-back" onclick="closeStatistics()">← Back to dashboard</button>
+    <h1>Statistics</h1>
+    <div class="sub">Issued client production, plan mix, and own-client performance.</div>
+    <h2>Statistics for Own &amp; Adopted</h2>
+    <div class="stats-sub">Issued clients only. Lapsed clients are excluded.</div>
+    <div class="statistics-grid">
+      <div class="statistics-card"><h3>Own</h3><div class="statistics-values"><div><div class="statistics-label">Clients</div><div class="statistics-value">${own.length}</div></div><div><div class="statistics-label">APE</div><div class="statistics-value">${fmtCurrency(totalApe(own))}</div></div><div><div class="statistics-label">Avg APE</div><div class="statistics-value">${fmtCurrency(average(own.map(row => parseCurrency(row.ape))))}</div></div></div></div>
+      <div class="statistics-card"><h3>Adopted</h3><div class="statistics-values"><div><div class="statistics-label">Clients</div><div class="statistics-value">${adopted.length}</div></div><div><div class="statistics-label">APE</div><div class="statistics-value">${fmtCurrency(totalApe(adopted))}</div></div><div><div class="statistics-label">Avg APE</div><div class="statistics-value">${fmtCurrency(average(adopted.map(row => parseCurrency(row.ape))))}</div></div></div></div>
+    </div>
+    <div class="statistics-chart-grid">
+      <div class="statistics-chart-card"><h3>APE by Client Type</h3><div class="statistics-pie" style="background:conic-gradient(var(--brass) 0deg ${ownShare}deg, var(--navy) ${ownShare}deg 360deg);"></div><div class="statistics-legend"><span><i class="statistics-swatch" style="background:var(--brass)"></i>Own ${combinedApe ? ((ownApe / combinedApe) * 100).toFixed(1) : '0.0'}%</span><span><i class="statistics-swatch" style="background:var(--navy)"></i>Adopted ${combinedApe ? ((adoptedApe / combinedApe) * 100).toFixed(1) : '0.0'}%</span></div></div>
+      <div class="statistics-chart-card"><h3>APE by Plan Type (Own)</h3>${chartBars(planRows(own), 'plan', 'ape', fmtCurrency)}</div>
+    </div>
+    <h2>Plan Types</h2>
+    <div class="stats-sub">Plan mix for Own and Adopted issued clients.</div>
+    <h3>Own</h3>${statisticsTable(planRows(own))}
+    <h3>Adopted</h3>${statisticsTable(planRows(adopted))}
+    <h2>Own Client Performance</h2>
+    <div class="stats-sub">Current year is ${currentYear}. Monthly averages use months with at least one Own client.</div>
+    <div class="statistics-grid">
+      <div class="statistics-card"><div class="statistics-label">Average No. of Clients per Month</div><div class="statistics-value">${average(activeMonths.map(row => row.clients)).toFixed(1)}</div><div class="statistics-note">${activeMonths.length} active month${activeMonths.length === 1 ? '' : 's'}</div></div>
+      <div class="statistics-card"><div class="statistics-label">Average APE Size per Month</div><div class="statistics-value">${fmtCurrency(average(activeMonths.map(row => row.ape)))}</div><div class="statistics-note">Average monthly Own APE</div></div>
+      <div class="statistics-card"><div class="statistics-label">Average APE Size YTD</div><div class="statistics-value">${fmtCurrency(average(ownYtd.map(row => parseCurrency(row.ape))))}</div><div class="statistics-note">Average per Own client</div></div>
+      <div class="statistics-card"><div class="statistics-label">Own APE YTD</div><div class="statistics-value">${fmtCurrency(totalApe(ownYtd))}</div><div class="statistics-note">${ownYtd.length} Own client${ownYtd.length === 1 ? '' : 's'}</div></div>
+    </div>
+    <h2>Production per Year (Own)</h2>
+    <div class="stats-sub">Own issued client count and APE by production year.</div>
+    <div class="statistics-chart-card"><h3>Yearly Own APE</h3>${chartBars(yearlyRows, 'year', 'ape', fmtCurrency)}</div>
+    <div class="statistics-table-wrap"><table class="statistics-table"><thead><tr><th>Year</th><th>Clients</th><th>Total APE</th><th>Average APE</th><th>Growth</th></tr></thead><tbody>${yearlyRows.length ? yearlyRows.map(row => `<tr><td>${row.year}</td><td class="num">${row.clients}</td><td class="num">${fmtCurrency(row.ape)}</td><td class="num">${fmtCurrency(row.ape / row.clients)}</td><td class="num">${row.growth == null ? 'New' : `${row.growth >= 0 ? '+' : ''}${row.growth.toFixed(1)}%`}</td></tr>`).join('') : '<tr><td colspan="5" class="statistics-empty">No production data yet.</td></tr>'}</tbody></table></div>
+    <h2>Own Monthly Production - ${currentYear}</h2>
+    <div class="statistics-table-wrap"><table class="statistics-table"><thead><tr><th>Month</th><th>Clients</th><th>APE</th><th>Average APE</th></tr></thead><tbody>${monthly.map(row => `<tr><td>${row.month}</td><td class="num">${row.clients}</td><td class="num">${fmtCurrency(row.ape)}</td><td class="num">${fmtCurrency(row.clients ? row.ape / row.clients : 0)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="statistics-assessment"><h2>2026 Sales Assessment</h2><p>${assessment}</p><p class="statistics-note">${assessmentNotes}</p></div>
+  `;
+}
+
+function openStatistics(){
+  statisticsOpen = true;
+  saveViewState();
+  renderView();
+  renderStatisticsPanel();
+}
+
+function closeStatistics(){
+  statisticsOpen = false;
+  saveViewState();
+  renderBoxGrid();
+  renderView();
+}
+
 /* ---------- view switching ---------- */
 function renderView(){
+  if(statisticsOpen){
+    boxGrid.style.display = 'none';
+    document.getElementById('group-title').style.display = 'none';
+    document.getElementById('group-sub').style.display = 'none';
+    document.querySelectorAll('.leaf-view').forEach(p => p.classList.remove('visible'));
+    statisticsMount.classList.add('visible');
+    return;
+  }
+  statisticsMount.classList.remove('visible');
   const showGrid = activeLeaf === null;
   boxGrid.style.display = showGrid ? 'grid' : 'none';
   document.getElementById('group-title').style.display = showGrid ? 'block' : 'none';
@@ -1833,6 +2050,7 @@ function renderView(){
 function selectGroup(groupId){
   activeGroup = groupId;
   activeLeaf = null;
+  saveViewState();
   renderGroupNav();
   renderBoxGrid();
   renderView();
@@ -1841,12 +2059,14 @@ function selectGroup(groupId){
 function selectLeaf(groupId, leafId){
   activeGroup = groupId;
   activeLeaf = leafId;
+  saveViewState();
   renderGroupNav();
   renderView();
 }
 
 function backToGrid(){
   activeLeaf = null;
+  saveViewState();
   renderBoxGrid();
   renderView();
 }
@@ -1894,19 +2114,32 @@ async function renderList(id){
 
 /* ---------- rendering: structured table ---------- */
 const sortState = {};
+const searchState = {};
 let clientYearFilter = 'all';
 function setClientYear(value){
   clientYearFilter = value;
   renderTable('pru-clients');
 }
+function setSearch(id){
+  searchState[id] = (document.getElementById(id + '-search')?.value || '').trim().toLowerCase();
+  if(id === 'pru-leads') return renderLeadTable(id);
+  if(id === 'pru-servicing') return renderServicingTable(id);
+  return renderTable(id);
+}
 function setSort(id, value){
   sortState[id] = value;
   renderTable(id);
 }
-function buildSortOptions(config){
+function buildSortOptions(config, id){
   const opts = ['<option value="date-asc">Issued date</option>'];
   if(config.columns.some(c => c.key === 'name')) opts.push('<option value="name-asc">Name (A\u2013Z)</option>');
   if(config.columns.some(c => c.key === 'submitted')) opts.push('<option value="date-asc">Issued date</option>');
+  if(id === 'pru-clients'){
+    opts.push('<option value="status-issued">Issued only</option>');
+    opts.push('<option value="status-lapsed">Lapsed only</option>');
+  }else if(config.columns.some(c => c.key === 'status')){
+    opts.push('<option value="status-asc">By Status</option>');
+  }
   if(config.columns.some(c => c.key === 'plan')) opts.push('<option value="plan-asc">By Plan</option>');
   if(config.columns.some(c => c.key === 'mode')) opts.push('<option value="mode-asc">By Mode</option>');
   if(config.columns.some(c => c.key === 'ape')) opts.push('<option value="ape-desc">Highest APE</option>');
@@ -1916,6 +2149,7 @@ function buildSortOptions(config){
 const leadSortState = {};
 const leadViewState = {};
 const servicingViewState = {};
+const servicingSortState = {};
 function setLeadView(id, view){
   leadViewState[id] = view;
   document.getElementById(id + '-tab-all')?.classList.toggle('active', view === 'all');
@@ -1984,11 +2218,15 @@ function setLeadSort(id, value){
 async function renderLeadTable(id){
   const entries = await getEntries(id);
   document.getElementById(id + '-push-pull-note')?.classList.toggle('visible', leadViewState[id] === 'nurture');
-  const visibleEntries = leadViewState[id] === 'nurture'
+  const viewEntries = leadViewState[id] === 'nurture'
     ? entries.filter(needsNurture)
     : leadViewState[id] === 'longterm'
       ? entries.filter(needsLongTermNurture)
       : entries;
+  const query = searchState[id] || '';
+  const visibleEntries = query
+    ? viewEntries.filter(row => Object.values(row).some(value => String(value ?? '').toLowerCase().includes(query)))
+    : viewEntries;
   const listEl = document.getElementById(id + '-list');
   const bcount = document.getElementById('bcount-' + id);
   if(bcount) bcount.textContent = entries.length;
@@ -2019,15 +2257,34 @@ function setServicingView(id, view){
 async function renderServicingTable(id){
   const entries = await getEntries(id);
   const view = servicingViewState[id] || 'all';
-  const visible = view === 'all' ? entries : entries.filter(row => (row.servicingType || 'Own') === view);
+  const viewEntries = view === 'all' ? entries : entries.filter(row => (row.servicingType || 'Own') === view);
+  const sortMode = servicingSortState[id] || 'date-asc';
+  const statusFiltered = sortMode === 'status-issued'
+    ? viewEntries.filter(row => !row.status || String(row.status).toLowerCase() === 'issued')
+    : sortMode === 'status-lapsed'
+      ? viewEntries.filter(row => String(row.status || '').toLowerCase() === 'lapsed')
+      : viewEntries;
+  const query = searchState[id] || '';
+  const visible = (query
+    ? statusFiltered.filter(row => Object.values(row).some(value => String(value ?? '').toLowerCase().includes(query)))
+    : statusFiltered).sort((a, b) => {
+      if(sortMode === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+      return (a.issuedDate || a.submitted || '').localeCompare(b.issuedDate || b.submitted || '');
+    });
   const listEl = document.getElementById(id + '-list');
   const bcount = document.getElementById('bcount-' + id);
   if(bcount) bcount.textContent = entries.length;
+  const sortSelect = document.getElementById(id + '-sort');
+  if(sortSelect) sortSelect.value = sortMode;
   listEl.innerHTML = visible.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Client Name</th><th>Issued Date</th><th>Type</th><th>Plan</th><th>Mode</th><th>Status</th><th>Contact Link</th><th>Notes</th><th></th></tr></thead><tbody>${visible.map(row => {
     const idx = entries.indexOf(row);
     return `<tr><td>${escapeHtml(row.name || '')}</td><td>${escapeHtml(fmtIssuedDate(row.issuedDate || row.submitted || ''))}</td><td>${escapeHtml(row.servicingType || 'Own')}</td><td>${escapeHtml(row.plan || '')}</td><td>${escapeHtml(row.mode || '')}</td><td><span class="status-pill status-${(row.status || 'Issued').replace(' ','\\ ')}">${escapeHtml(row.status || 'Issued')}</span></td><td>${contactHref(row.contactLink) ? `<a class="contact-link" href="${escapeHtml(contactHref(row.contactLink))}" target="_blank" rel="noopener">Open Link</a>` : ''}</td><td>${escapeHtml(row.notes || '')}</td><td><button class="row-del" onclick="editServicingEntry('${id}', ${idx})">Edit</button>&nbsp;&nbsp;<button class="row-del" onclick="deleteEntry('${id}', ${idx})">Remove</button></td></tr>`;
   }).join('')}</tbody></table></div>` : '<div class="empty">No clients in this view yet.</div>';
   await renderGroupCount(idToGroup(id));
+}
+function setServicingSort(id, value){
+  servicingSortState[id] = value;
+  renderServicingTable(id);
 }
 async function addServicingEntry(id){
   const entries = await getEntries(id);
@@ -2235,16 +2492,18 @@ async function renderTable(id){
     });
   });
   if(totalsEl){
-    const currentYear = new Date().getFullYear();
-    const issuedEntries = entries.filter(row => !row.status || row.status === 'Issued');
-    const ytdEntries = issuedEntries.filter(row => {
-      const issuedDate = submittedDateFromMonth(row.submitted, 2026);
-      return issuedDate && issuedDate.getFullYear() === currentYear;
-    }).length;
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const issuedEntries = allEntries.filter(row => !row.status || String(row.status).toLowerCase() === 'issued');
+    const ownIssuedEntries = issuedEntries.filter(row => (row.clientType || 'Own') === 'Own');
     const ytdRows = issuedEntries.filter(row => {
-      const issuedDate = submittedDateFromMonth(row.submitted, 2026);
-      return issuedDate && issuedDate.getFullYear() === currentYear;
+      const issuedDate = submittedDateFromMonth(row.submitted, currentYear);
+      return issuedDate
+        && issuedDate.getFullYear() === currentYear
+        && issuedDate <= today
+        && (row.clientType || 'Own') === 'Own';
     });
+    const ytdEntries = ytdRows.length;
     const sumRows = (rows, key) => rows.reduce((sum, row) => sum + parseCurrency(row[key]), 0);
     const ytdAPE = sumRows(ytdRows, 'ape');
     const ytdPremium = sumRows(ytdRows, 'premium');
@@ -2259,7 +2518,7 @@ async function renderTable(id){
         <div class="client-metrics-primary">
           <div class="client-metric"><div class="client-metric-label">YTD Total No. of Clients</div><div class="client-metric-value">${ytdEntries}</div></div>
           <div class="client-metric"><div class="client-metric-label">YTD Total APE</div><div class="client-metric-value">${fmtCurrency(ytdAPE)}</div></div>
-          <div class="client-metric"><div class="client-metric-label">FYP</div><div class="client-metric-value">${fmtCurrency(issuedEntries.reduce((sum, row) => sum + clientFYP(row, fypAsOfDate), 0))}</div></div>
+          <div class="client-metric"><div class="client-metric-label">FYP</div><div class="client-metric-value">${fmtCurrency(ownIssuedEntries.reduce((sum, row) => sum + clientFYP(row, fypAsOfDate), 0))}</div></div>
           <div class="client-metric"><div class="client-metric-label">YTD Total Premium</div><div class="client-metric-value">${fmtCurrency(ytdPremium)}</div></div>
           <div class="client-metric"><div class="client-metric-label">YTD Total SA</div><div class="client-metric-value">${fmtCurrency(ytdSA)}</div></div>
         </div>
@@ -2282,7 +2541,12 @@ async function renderTable(id){
   }
 
   const sortMode = sortState[id] || 'date-asc';
-  const sorted = [...entries].sort((a, b) => {
+  const statusFiltered = sortMode === 'status-issued'
+    ? entries.filter(row => !row.status || String(row.status).toLowerCase() === 'issued')
+    : sortMode === 'status-lapsed'
+      ? entries.filter(row => String(row.status || '').toLowerCase() === 'lapsed')
+      : entries;
+  const sorted = [...statusFiltered].sort((a, b) => {
     if(sortMode === 'name-asc'){
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     }
@@ -2305,8 +2569,12 @@ async function renderTable(id){
   if(yearSelect) yearSelect.value = clientYearFilter;
 
   const headCells = config.columns.map(c => `<th>${c.label}</th>`).join('') + '<th></th>';
-  const bodyRows = sorted.map(row => {
-    const idx = entries.indexOf(row);
+  const query = searchState[id] || '';
+  const filtered = query
+    ? sorted.filter(row => Object.values(row).some(value => String(value ?? '').toLowerCase().includes(query)))
+    : sorted;
+  const bodyRows = filtered.map(row => {
+    const idx = allEntries.indexOf(row);
     const cells = config.columns.map(c => {
       const v = row[c.key];
       if(c.type === 'computed'){
@@ -2709,6 +2977,7 @@ function renderTodayBadge(){
 }
 
 window.initApp = async function initApp(){
+  restoreViewState();
   renderTodayBadge();
   renderGroupNav();
   renderBoxGrid();
@@ -2724,6 +2993,7 @@ window.initApp = async function initApp(){
   await Promise.all(['pru-clients','pru-leads','pru-servicing'].map(id => renderList(id)));
   await renderAllCounts();
   await renderRewardsPanel();
+  if(statisticsOpen) await renderStatisticsPanel();
 };
 </script>
 
