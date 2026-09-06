@@ -1116,6 +1116,164 @@ const LEAD_SOURCES = ["FB","IG","Tiktok","FB Ads","Referral","B2B/Flyering"];
 const LEAD_STATUSES = ["Messaged","Inquired","Prospect","Appointment Set","Quote Sent","App Submitted","Issued"];
 const LEAD_NEEDS = ["Life Insurance","Health Insurance","Investments","Guaranteed Cash","Educational","Retirement Plan"];
 
+/* ================= PRUFINATED — commission rate schedule =================
+   Sourced from commission_table_for_pru.xlsx ("MONTHLY COMMISSION RATES").
+   Each array = [1st yr, 2nd yr, 3rd yr, 4th yr, 5th yr, 6th yr onwards].
+   PAA+ is tiered by APE (below vs at/above ₱36,000). The source file only
+   gives a distinct 1st-year rate for the ≥36K tier — years 2 onward for
+   that tier are assumed to follow the <36K tier's rates (flagged below).
+   PruMil / PIA are single, one-time commissions (not a yearly schedule).
+   PSI, PruWealth, PFL, and Takaful had no rate listed in the source file —
+   clients on those plans are flagged instead of guessed at. */
+const COMMISSION_RATES = {
+  "PAA+":     { tiered: true, low:[0.30,0.20,0.05,0.05,0.05,0.00], high:[0.45,0.20,0.05,0.05,0.05,0.00] },
+  "Exact 15": { rates:[0.40,0.15,0.05,0.05,0.05,0.00] },
+  "Exact 10": { rates:[0.375,0.15,0.05,0.05,0.05,0.00] },
+  "Exact 7":  { rates:[0.35,0.15,0.05,0.05,0.00,0.00] },
+  "Exact 5":  { rates:[0.35,0.15,0.05,0.00,0.00,0.00] },
+  "Elite 15": { rates:[0.28,0.09,0.04,0.04,0.04,0.00] },
+  "Elite 10": { rates:[0.23,0.07,0.03,0.03,0.03,0.00] },
+  "Elite 7":  { rates:[0.175,0.045,0.02,0.02,0.00,0.00] },
+  "Elite 5":  { rates:[0.15,0.035,0.02,0.00,0.00,0.00] },
+  "PLFL 5":   { rates:[0.25,0.05,0.05,0.00,0.00,0.00] },
+  "PLFL 10":  { rates:[0.275,0.05,0.05,0.05,0.05,0.00] },
+  "PLFL 15":  { rates:[0.30,0.05,0.05,0.05,0.05,0.00] },
+  "PLFL 20":  { rates:[0.30,0.05,0.05,0.05,0.05,0.00] },
+  "PLI 5":    { rates:[0.20,0.15,0.05,0.00,0.00,0.00] },
+  "PLI 10":   { rates:[0.25,0.15,0.05,0.05,0.05,0.00] },
+  "PHP":      { rates:[0.195,0.10,0.05,0.05,0.05,0.00] },
+  /* PYT rate depends on the client's Mode of Payment; Monthly-mode years
+     2+ weren't broken out in the source file, so they mirror the Annual
+     column's 20% (flagged below). */
+  "PYT":      { byMode: true, annual:[0.40,0.20,0.20,0.20,0.20,0.20], monthly:[0.35,0.20,0.20,0.20,0.20,0.20] },
+  "PruMil":   { oneTime: true, rate: 0.0225 },
+  "PIA":      { oneTime: true, rate: 0.01 },
+};
+/* Plans that exist in PLAN_OPTIONS but have no rate in the source file */
+const PRUFIN_UNRATED_PLANS = ["PSI","PruWealth","PFL","Takaful"];
+const PRUFIN_TAX_RATE = 0.03; // 3% withholding, applied to gross to get net
+
+function prufinNormalizePlan(plan){
+  return String(plan || '').trim();
+}
+function prufinPolicyYearIndex(policyYear){
+  return Math.min(Math.max(policyYear, 1), 6) - 1;
+}
+/* Returns a decimal rate (e.g. 0.30), or null if no rate is on file for
+   this plan/tier/mode combination. */
+function prufinCommissionRate(row, policyYear){
+  const plan = prufinNormalizePlan(row.plan);
+  const entry = COMMISSION_RATES[plan];
+  if(!entry) return null;
+  const idx = prufinPolicyYearIndex(policyYear);
+  if(entry.oneTime) return entry.rate;
+  if(entry.tiered){
+    const ape = parseCurrency(row.ape);
+    return (ape >= 36000 ? entry.high : entry.low)[idx];
+  }
+  if(entry.byMode){
+    return (row.mode === 'Monthly' ? entry.monthly : entry.annual)[idx];
+  }
+  return entry.rates[idx];
+}
+function prufinAddMonths(date, months){
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+function prufinMonthDiff(a, b){
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
+/* Derives the modal premium for one payment: uses the explicit Premium
+   field if present, otherwise backs it out of APE (APE = premium × freq,
+   per setupApeAutoCalc), and treats One-Time/no-frequency plans as a
+   single lump sum equal to APE. */
+function prufinModalPremium(row, freq){
+  const explicit = parseCurrency(row.premium);
+  if(explicit) return explicit;
+  const ape = parseCurrency(row.ape);
+  if(!ape) return 0;
+  return freq ? ape / freq : ape;
+}
+/* Generates every commission-bearing payment that lands inside calendar
+   year 2026 for one Issued client, each tagged with its policy year
+   (1st, 2nd, 3rd...) so multi-year clients batch correctly even though
+   not everyone shares the same issue date. */
+function prufinPaymentsIn2026(row){
+  if(!row || row.status !== 'Issued') return [];
+  const issuedDate = submittedDateFromMonth(row.submitted, 2026);
+  if(!issuedDate) return [];
+  const entry = COMMISSION_RATES[prufinNormalizePlan(row.plan)];
+  const isOneTime = !!(entry && entry.oneTime) || row.mode === 'One-Time' || !MODE_FREQ[row.mode];
+  const freq = MODE_FREQ[row.mode] || null;
+  const premium = prufinModalPremium(row, freq);
+  if(!premium) return [];
+
+  if(isOneTime){
+    if(issuedDate.getFullYear() !== 2026) return [];
+    return [{ monthIndex: issuedDate.getMonth(), policyYear: 1, premium }];
+  }
+
+  const intervalMonths = 12 / freq;
+  const yearStart = new Date(2026, 0, 1);
+  const yearEnd = new Date(2026, 11, 31);
+  const payments = [];
+  for(let k = 0; k < 600; k++){
+    const payDate = prufinAddMonths(issuedDate, k * intervalMonths);
+    if(payDate > yearEnd) break;
+    if(payDate >= yearStart){
+      const monthsElapsed = prufinMonthDiff(issuedDate, payDate);
+      payments.push({ monthIndex: payDate.getMonth(), policyYear: Math.floor(monthsElapsed / 12) + 1, premium });
+    }
+  }
+  return payments;
+}
+const PRUFIN_ORDINALS = ["1st","2nd","3rd","4th","5th","6th+"];
+/* Builds the full 2026 estimate: gross/net commission per calendar month,
+   batched by policy year (1st Year Commissions, 2nd Year Commissions...),
+   plus a list of clients that couldn't be computed (no rate on file, or
+   missing plan/premium data) so they can be checked manually. */
+function computePrufinEstimate(clients){
+  const batches = {}; // policyYear -> { gross:[12], net:[12] }
+  const warnings = [];
+  (clients || []).filter(row => row.status === 'Issued').forEach(row => {
+    const plan = prufinNormalizePlan(row.plan);
+    if(!plan){
+      warnings.push({ name: row.name || 'Unnamed client', reason: 'No plan selected' });
+      return;
+    }
+    if(PRUFIN_UNRATED_PLANS.includes(plan)){
+      warnings.push({ name: row.name || 'Unnamed client', reason: `No commission rate on file for ${plan}` });
+      return;
+    }
+    if(!COMMISSION_RATES[plan]){
+      warnings.push({ name: row.name || 'Unnamed client', reason: `Unrecognized plan "${plan}"` });
+      return;
+    }
+    const payments = prufinPaymentsIn2026(row);
+    if(!payments.length) return;
+    payments.forEach(p => {
+      const rate = prufinCommissionRate(row, p.policyYear);
+      if(rate == null){
+        warnings.push({ name: row.name || 'Unnamed client', reason: `No rate for ${plan}, policy year ${p.policyYear}` });
+        return;
+      }
+      const gross = rate * p.premium;
+      if(!gross) return;
+      const yearKey = Math.min(p.policyYear, 6);
+      if(!batches[yearKey]) batches[yearKey] = { gross: Array(12).fill(0), net: Array(12).fill(0) };
+      batches[yearKey].gross[p.monthIndex] += gross;
+      batches[yearKey].net[p.monthIndex] += gross * (1 - PRUFIN_TAX_RATE);
+    });
+  });
+  const years = Object.keys(batches).map(Number).sort((a, b) => a - b);
+  const overallGross = Array(12).fill(0);
+  const overallNet = Array(12).fill(0);
+  years.forEach(y => {
+    batches[y].gross.forEach((v, i) => overallGross[i] += v);
+    batches[y].net.forEach((v, i) => overallNet[i] += v);
+  });
+  return { batches, years, overallGross, overallNet, warnings };
+}
+
 /* -- rolling-12-month FYP: paid premium installments inside the 12 calendar
   months ending today -- */
 function submittedDateFromMonth(value, year){
@@ -1800,6 +1958,119 @@ async function renderRewardsPanel(){
   startYearCountdown();
 }
 
+/* -- PRUFINATED: commission rate reference + 2026 monthly estimate -- */
+function prufinRateTableHtml(){
+  const rows = [
+    ["PAA+ (below ₱36K APE)", ...COMMISSION_RATES["PAA+"].low],
+    ["PAA+ (₱36K APE & above)*", ...COMMISSION_RATES["PAA+"].high],
+    ["Exact 15", ...COMMISSION_RATES["Exact 15"].rates],
+    ["Exact 10", ...COMMISSION_RATES["Exact 10"].rates],
+    ["Exact 7", ...COMMISSION_RATES["Exact 7"].rates],
+    ["Exact 5", ...COMMISSION_RATES["Exact 5"].rates],
+    ["Elite 15", ...COMMISSION_RATES["Elite 15"].rates],
+    ["Elite 10", ...COMMISSION_RATES["Elite 10"].rates],
+    ["Elite 7", ...COMMISSION_RATES["Elite 7"].rates],
+    ["Elite 5", ...COMMISSION_RATES["Elite 5"].rates],
+    ["PLFL 5", ...COMMISSION_RATES["PLFL 5"].rates],
+    ["PLFL 10", ...COMMISSION_RATES["PLFL 10"].rates],
+    ["PLFL 15", ...COMMISSION_RATES["PLFL 15"].rates],
+    ["PLFL 20", ...COMMISSION_RATES["PLFL 20"].rates],
+    ["PLI 5", ...COMMISSION_RATES["PLI 5"].rates],
+    ["PLI 10", ...COMMISSION_RATES["PLI 10"].rates],
+    ["PHP", ...COMMISSION_RATES["PHP"].rates],
+    ["PYT (Annual mode)*", ...COMMISSION_RATES["PYT"].annual],
+    ["PYT (Monthly mode)*", ...COMMISSION_RATES["PYT"].monthly],
+  ];
+  const pct = v => `${(v * 100).toFixed(1).replace(/\.0$/, '')}%`;
+  return `
+    <div class="statistics-table-wrap">
+      <table class="statistics-table">
+        <thead><tr><th style="text-align:left;">Plan</th><th>1st Yr</th><th>2nd Yr</th><th>3rd Yr</th><th>4th Yr</th><th>5th Yr</th><th>6th Yr+</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr><td style="text-align:left;">${escapeHtml(r[0])}</td>${r.slice(1).map(v => `<td class="num">${pct(v)}</td>`).join('')}</tr>`).join('')}
+          <tr><td style="text-align:left;">PruMil (one-time)</td><td class="num">${pct(COMMISSION_RATES["PruMil"].rate)}</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr><td style="text-align:left;">PIA (one-time)</td><td class="num">${pct(COMMISSION_RATES["PIA"].rate)}</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="rs-sub" style="margin-top:8px;">*Rows marked with an asterisk have an assumption applied — see the note below the 2026 estimate. No rate is on file for PSI, PruWealth, PFL, or Takaful; clients on those plans are flagged instead of estimated. Rates from commission_table_for_pru.xlsx.</div>
+  `;
+}
+
+function prufinMonthlyTableHtml(title, gross, net, subtitle){
+  const totalGross = gross.reduce((a, b) => a + b, 0);
+  const totalNet = net.reduce((a, b) => a + b, 0);
+  return `
+    <div class="rewards-section">
+      <h2>${escapeHtml(title)}</h2>
+      ${subtitle ? `<div class="rs-sub">${subtitle}</div>` : ''}
+      <div class="statistics-table-wrap">
+        <table class="statistics-table">
+          <thead><tr><th style="text-align:left;">2026</th>${MONTHS.map(m => `<th>${m.slice(0,3)}</th>`).join('')}<th>Total</th></tr></thead>
+          <tbody>
+            <tr><td style="text-align:left;">Gross PRUFIN</td>${gross.map(v => `<td class="num">${fmtCurrency(v)}</td>`).join('')}<td class="num">${fmtCurrency(totalGross)}</td></tr>
+            <tr><td style="text-align:left;">Net PRUFIN (less 3% tax)</td>${net.map(v => `<td class="num">${fmtCurrency(v)}</td>`).join('')}<td class="num">${fmtCurrency(totalNet)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function buildPrufinPanel(item, groupLabel){
+  const el = document.createElement('div');
+  el.className = 'leaf-view';
+  el.id = 'leaf-' + item.id;
+  el.innerHTML = `
+    <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
+    <h1>${item.label}</h1>
+    <div class="sub">${groupLabel} · commission rates and a live 2026 monthly estimate from your Issued Clients</div>
+    <div class="rewards-section">
+      <h2>Commission Rate Schedule</h2>
+      <div class="rs-sub">Percent of modal premium paid to you, by plan and policy year.</div>
+      ${prufinRateTableHtml()}
+    </div>
+    <div id="prufin-mount"></div>
+  `;
+  return el;
+}
+
+async function renderPrufinPanel(){
+  const mount = document.getElementById('prufin-mount');
+  if(!mount) return; // panel not built yet
+  const clients = await getEntries('pru-clients');
+  const est = computePrufinEstimate(clients);
+
+  const overallHtml = prufinMonthlyTableHtml(
+    'Estimated 2026 Monthly Commissions — All Years Combined',
+    est.overallGross, est.overallNet,
+    'Sum of every policy-year batch below. Estimates only, based on scheduled premium due dates.'
+  );
+
+  const batchHtml = est.years.length
+    ? est.years.map(y => prufinMonthlyTableHtml(
+        `${PRUFIN_ORDINALS[y - 1] || y + 'th'} Year Commissions`,
+        est.batches[y].gross, est.batches[y].net,
+        y === 1
+          ? 'Clients within their first 12 months on the books.'
+          : `Clients now in year ${y} of their policy — issue dates don't line up, so each client lands in the month their own anniversary payment falls due.`
+      )).join('')
+    : `<div class="rewards-section"><div class="rs-sub">No Issued clients with a computable premium and rate were found yet.</div></div>`;
+
+  const warningsHtml = est.warnings.length
+    ? `<div class="rewards-section">
+        <h2>Needs a Closer Look</h2>
+        <div class="rs-sub">These Issued clients were left out of the estimate above — fill in the missing field or confirm the plan to include them.</div>
+        <div class="statistics-table-wrap"><table class="statistics-table">
+          <thead><tr><th style="text-align:left;">Client</th><th style="text-align:left;">Why it's excluded</th></tr></thead>
+          <tbody>${est.warnings.map(w => `<tr><td style="text-align:left;">${escapeHtml(w.name)}</td><td style="text-align:left;">${escapeHtml(w.reason)}</td></tr>`).join('')}</tbody>
+        </table></div>
+      </div>`
+    : '';
+
+  mount.innerHTML = overallHtml + batchHtml + warningsHtml;
+}
+
 async function openRewardBreakdown(kind, key){
   const modal = document.getElementById('client-fyp-modal');
   const list = document.getElementById('client-fyp-list');
@@ -1892,6 +2163,8 @@ GROUPS.forEach(g => {
     let panel;
     if(item.id === 'pru-rewards'){
       panel = buildRewardsPanel(item, g.label);
+    }else if(item.id === 'prufin'){
+      panel = buildPrufinPanel(item, g.label);
     }else if(item.id === 'pru-servicing'){
       panel = buildServicingPanel(item, g.label);
     }else if(tableConfig && tableConfig.lead){
@@ -2536,7 +2809,7 @@ async function renderTable(id){
   if(entries.length === 0){
     listEl.innerHTML = `<div class="empty">No entries yet — add your first client above.</div>`;
     await renderGroupCount(idToGroup(id));
-    if(id === 'pru-clients') await renderRewardsPanel();
+    if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); }
     return;
   }
 
@@ -2607,7 +2880,7 @@ async function renderTable(id){
     </div>
   `;
   await renderGroupCount(idToGroup(id));
-  if(id === 'pru-clients') await renderRewardsPanel();
+  if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); }
 }
 
 function idToGroup(leafId){
@@ -2653,7 +2926,10 @@ async function refreshAfterClientChange(id){
   }
   await renderList(id);
   await renderAllCounts();
-  if(id === 'pru-clients') await renderRewardsPanel();
+  if(id === 'pru-clients'){
+    await renderRewardsPanel();
+    await renderPrufinPanel();
+  }
 }
 
 /* ---------- edit-mode helpers ---------- */
@@ -2993,6 +3269,7 @@ window.initApp = async function initApp(){
   await Promise.all(['pru-clients','pru-leads','pru-servicing'].map(id => renderList(id)));
   await renderAllCounts();
   await renderRewardsPanel();
+  await renderPrufinPanel();
   if(statisticsOpen) await renderStatisticsPanel();
 };
 </script>
