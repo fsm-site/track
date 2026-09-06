@@ -888,6 +888,25 @@
   .statistics-bar-label{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink); font-weight:700;}
   .statistics-bar-track{height:10px; border-radius:99px; overflow:hidden; background:var(--stripe);}
   .statistics-bar-fill{height:100%; border-radius:99px; background:var(--brass);}
+  .statistics-bar-fill.net{background:var(--navy);}
+  .prufin-year-tabs{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
+  .prufin-year-tab{all:unset; cursor:pointer; padding:7px 14px; border-radius:999px; font-size:12.5px; font-weight:600; color:var(--ink-soft); background:var(--stripe); border:1px solid var(--line);}
+  .prufin-year-tab:hover{border-color:var(--brass); color:var(--ink);}
+  .prufin-year-tab.active{background:var(--brass); color:#fff; border-color:var(--brass);}
+  .prufin-rate-editor-head{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px;}
+  .prufin-rate-editor-head select{width:auto; min-width:220px;}
+  .prufin-badge{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding:3px 9px; border-radius:999px;}
+  .prufin-badge.default{background:var(--brass-soft); color:var(--brass-dark);}
+  .prufin-badge.custom{background:#e4eee7; color:#2f6b4f;}
+  .prufin-badge.unset{background:var(--stripe); color:var(--ink-soft);}
+  .prufin-rate-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-top:10px;}
+  .prufin-rate-grid.one-time{grid-template-columns:1fr;}
+  .prufin-rate-grid label{display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--ink-soft); font-weight:600;}
+  .prufin-rate-grid input{padding:8px 9px; font-size:13px; border:1px solid var(--line); border-radius:8px; font-family:inherit;}
+  .prufin-clickable-title{cursor:pointer; display:flex; align-items:center; gap:10px;}
+  .prufin-clickable-title:hover{color:var(--brass-dark);}
+  .prufin-view-clients{font-size:11.5px; font-weight:600; color:var(--brass); text-transform:none; letter-spacing:0;}
+  @media(max-width:700px){.prufin-rate-grid{grid-template-columns:repeat(3,1fr);}}
   .statistics-bar-value{color:var(--navy); font-weight:700; white-space:nowrap;}
   .statistics-assessment{margin-top:28px; padding:20px 24px; border:1px solid var(--brass); border-radius:14px; background:linear-gradient(135deg,#fff,var(--brass-soft) 220%); color:var(--navy);}
   .statistics-assessment h2{margin:0 0 8px; font-size:17px;}
@@ -1117,41 +1136,47 @@ const LEAD_STATUSES = ["Messaged","Inquired","Prospect","Appointment Set","Quote
 const LEAD_NEEDS = ["Life Insurance","Health Insurance","Investments","Guaranteed Cash","Educational","Retirement Plan"];
 
 /* ================= PRUFINATED — commission rate schedule =================
-   Sourced from commission_table_for_pru.xlsx ("MONTHLY COMMISSION RATES").
-   Each array = [1st yr, 2nd yr, 3rd yr, 4th yr, 5th yr, 6th yr onwards].
-   PAA+ is tiered by APE (below vs at/above ₱36,000). The source file only
-   gives a distinct 1st-year rate for the ≥36K tier — years 2 onward for
-   that tier are assumed to follow the <36K tier's rates (flagged below).
-   PruMil / PIA are single, one-time commissions (not a yearly schedule).
-   PSI, PruWealth, PFL, and Takaful had no rate listed in the source file —
-   clients on those plans are flagged instead of guessed at. */
-const COMMISSION_RATES = {
-  "PAA+":     { tiered: true, low:[0.30,0.20,0.05,0.05,0.05,0.00], high:[0.45,0.20,0.05,0.05,0.05,0.00] },
-  "Exact 15": { rates:[0.40,0.15,0.05,0.05,0.05,0.00] },
-  "Exact 10": { rates:[0.375,0.15,0.05,0.05,0.05,0.00] },
-  "Exact 7":  { rates:[0.35,0.15,0.05,0.05,0.00,0.00] },
-  "Exact 5":  { rates:[0.35,0.15,0.05,0.00,0.00,0.00] },
-  "Elite 15": { rates:[0.28,0.09,0.04,0.04,0.04,0.00] },
-  "Elite 10": { rates:[0.23,0.07,0.03,0.03,0.03,0.00] },
-  "Elite 7":  { rates:[0.175,0.045,0.02,0.02,0.00,0.00] },
-  "Elite 5":  { rates:[0.15,0.035,0.02,0.00,0.00,0.00] },
-  "PLFL 5":   { rates:[0.25,0.05,0.05,0.00,0.00,0.00] },
-  "PLFL 10":  { rates:[0.275,0.05,0.05,0.05,0.05,0.00] },
-  "PLFL 15":  { rates:[0.30,0.05,0.05,0.05,0.05,0.00] },
-  "PLFL 20":  { rates:[0.30,0.05,0.05,0.05,0.05,0.00] },
-  "PLI 5":    { rates:[0.20,0.15,0.05,0.00,0.00,0.00] },
-  "PLI 10":   { rates:[0.25,0.15,0.05,0.05,0.05,0.00] },
-  "PHP":      { rates:[0.195,0.10,0.05,0.05,0.05,0.00] },
-  /* PYT rate depends on the client's Mode of Payment; Monthly-mode years
-     2+ weren't broken out in the source file, so they mirror the Annual
-     column's 20% (flagged below). */
-  "PYT":      { byMode: true, annual:[0.40,0.20,0.20,0.20,0.20,0.20], monthly:[0.35,0.20,0.20,0.20,0.20,0.20] },
-  "PruMil":   { oneTime: true, rate: 0.0225 },
-  "PIA":      { oneTime: true, rate: 0.01 },
-};
-/* Plans that exist in PLAN_OPTIONS but have no rate in the source file */
-const PRUFIN_UNRATED_PLANS = ["PSI","PruWealth","PFL","Takaful"];
+   Factory defaults are sourced from commission_table_for_pru.xlsx
+   ("MONTHLY COMMISSION RATES") and only cover production year 2026.
+   Each "yearly" plan has a rates array = [1st yr, 2nd yr, 3rd yr, 4th yr,
+   5th yr, 6th yr onwards]. "oneTime" plans (PruMil, PIA) pay a single flat
+   rate once, at issuance, instead of a yearly schedule.
+   PAA+ and PYT are split into two plan keys (by APE tier / by Mode of
+   Payment) so every plan in the picker below is a simple flat schedule —
+   this keeps the rate editor uniform for built-in and custom plans alike.
+   Rates for any other production year (2022–2025, 2027–2030), and any
+   plan not listed here, start out "Not set" and can be filled in from the
+   Commission Rate Schedule editor in the PRUFINATED tab. */
+const PRUFIN_RATE_YEARS = [2022,2023,2024,2025,2026,2027,2028,2029,2030];
 const PRUFIN_TAX_RATE = 0.03; // 3% withholding, applied to gross to get net
+const PRUFIN_ORDINALS = ["1st","2nd","3rd","4th","5th","6th+"];
+
+const PRUFIN_DEFAULT_RATES_2026 = {
+  "PAA+ (below ₱36K APE)":    { kind:'yearly', rates:[0.30,0.20,0.05,0.05,0.05,0.00] },
+  "PAA+ (₱36K APE & above)":  { kind:'yearly', rates:[0.45,0.20,0.05,0.05,0.05,0.00] },
+  "Exact 15":  { kind:'yearly', rates:[0.40,0.15,0.05,0.05,0.05,0.00] },
+  "Exact 10":  { kind:'yearly', rates:[0.375,0.15,0.05,0.05,0.05,0.00] },
+  "Exact 7":   { kind:'yearly', rates:[0.35,0.15,0.05,0.05,0.00,0.00] },
+  "Exact 5":   { kind:'yearly', rates:[0.35,0.15,0.05,0.00,0.00,0.00] },
+  "Elite 15":  { kind:'yearly', rates:[0.28,0.09,0.04,0.04,0.04,0.00] },
+  "Elite 10":  { kind:'yearly', rates:[0.23,0.07,0.03,0.03,0.03,0.00] },
+  "Elite 7":   { kind:'yearly', rates:[0.175,0.045,0.02,0.02,0.00,0.00] },
+  "Elite 5":   { kind:'yearly', rates:[0.15,0.035,0.02,0.00,0.00,0.00] },
+  "PLFL 5":    { kind:'yearly', rates:[0.25,0.05,0.05,0.00,0.00,0.00] },
+  "PLFL 10":   { kind:'yearly', rates:[0.275,0.05,0.05,0.05,0.05,0.00] },
+  "PLFL 15":   { kind:'yearly', rates:[0.30,0.05,0.05,0.05,0.05,0.00] },
+  "PLFL 20":   { kind:'yearly', rates:[0.30,0.05,0.05,0.05,0.05,0.00] },
+  "PLI 5":     { kind:'yearly', rates:[0.20,0.15,0.05,0.00,0.00,0.00] },
+  "PLI 10":    { kind:'yearly', rates:[0.25,0.15,0.05,0.05,0.05,0.00] },
+  "PHP":       { kind:'yearly', rates:[0.195,0.10,0.05,0.05,0.05,0.00] },
+  "PYT (Annual mode)":  { kind:'yearly', rates:[0.40,0.20,0.20,0.20,0.20,0.20] },
+  "PYT (Monthly mode)": { kind:'yearly', rates:[0.35,0.20,0.20,0.20,0.20,0.20] },
+  "PruMil":    { kind:'oneTime', rate: 0.0225 },
+  "PIA":       { kind:'oneTime', rate: 0.01 },
+};
+/* Always shown in the plan picker, for every year, even where no rate is
+   set yet — plus whatever custom plans the user has added. */
+const PRUFIN_BASE_PLAN_KEYS = Object.keys(PRUFIN_DEFAULT_RATES_2026);
 
 function prufinNormalizePlan(plan){
   return String(plan || '').trim();
@@ -1159,22 +1184,30 @@ function prufinNormalizePlan(plan){
 function prufinPolicyYearIndex(policyYear){
   return Math.min(Math.max(policyYear, 1), 6) - 1;
 }
-/* Returns a decimal rate (e.g. 0.30), or null if no rate is on file for
-   this plan/tier/mode combination. */
-function prufinCommissionRate(row, policyYear){
+/* Maps a client record to the plan key used for rate lookups — splitting
+   PAA+ by APE tier and PYT by Mode of Payment so every key is a flat
+   schedule (see comment above). */
+function resolvePrufinPlanKey(row){
   const plan = prufinNormalizePlan(row.plan);
-  const entry = COMMISSION_RATES[plan];
-  if(!entry) return null;
-  const idx = prufinPolicyYearIndex(policyYear);
-  if(entry.oneTime) return entry.rate;
-  if(entry.tiered){
-    const ape = parseCurrency(row.ape);
-    return (ape >= 36000 ? entry.high : entry.low)[idx];
+  if(!plan) return '';
+  if(plan === 'PAA+'){
+    return parseCurrency(row.ape) >= 36000 ? "PAA+ (₱36K APE & above)" : "PAA+ (below ₱36K APE)";
   }
-  if(entry.byMode){
-    return (row.mode === 'Monthly' ? entry.monthly : entry.annual)[idx];
+  if(plan === 'PYT'){
+    return row.mode === 'Monthly' ? "PYT (Monthly mode)" : "PYT (Annual mode)";
   }
-  return entry.rates[idx];
+  return plan;
+}
+/* Looks up the effective rate entry for a plan key in a given production
+   year: a saved custom/override entry wins if present, otherwise the 2026
+   factory default (if this is 2026 and the plan is a built-in one), else
+   null ("not set"). `overrides` is the array loaded from the
+   "prufin-rate-overrides" store. */
+function prufinRateEntryFor(overrides, year, key){
+  const found = (overrides || []).find(o => o.year === year && o.key === key);
+  if(found) return found;
+  if(year === 2026 && PRUFIN_DEFAULT_RATES_2026[key]) return PRUFIN_DEFAULT_RATES_2026[key];
+  return null;
 }
 function prufinAddMonths(date, months){
   return new Date(date.getFullYear(), date.getMonth() + months, 1);
@@ -1184,8 +1217,8 @@ function prufinMonthDiff(a, b){
 }
 /* Derives the modal premium for one payment: uses the explicit Premium
    field if present, otherwise backs it out of APE (APE = premium × freq,
-   per setupApeAutoCalc), and treats One-Time/no-frequency plans as a
-   single lump sum equal to APE. */
+   per setupApeAutoCalc); one-time plans use the full APE as a single
+   lump sum. */
 function prufinModalPremium(row, freq){
   const explicit = parseCurrency(row.premium);
   if(explicit) return explicit;
@@ -1196,14 +1229,16 @@ function prufinModalPremium(row, freq){
 /* Generates every commission-bearing payment that lands inside calendar
    year 2026 for one Issued client, each tagged with its policy year
    (1st, 2nd, 3rd...) so multi-year clients batch correctly even though
-   not everyone shares the same issue date. */
-function prufinPaymentsIn2026(row){
+   not everyone shares the same issue date. Mode of Payment left blank
+   defaults to an annual (once-per-policy-year) cadence rather than a
+   single lifetime payment, so renewal-year commissions still show up in
+   later years for records that didn't record a Mode. */
+function prufinPaymentsIn2026(row, rateEntry){
   if(!row || row.status !== 'Issued') return [];
   const issuedDate = submittedDateFromMonth(row.submitted, 2026);
   if(!issuedDate) return [];
-  const entry = COMMISSION_RATES[prufinNormalizePlan(row.plan)];
-  const isOneTime = !!(entry && entry.oneTime) || row.mode === 'One-Time' || !MODE_FREQ[row.mode];
-  const freq = MODE_FREQ[row.mode] || null;
+  const isOneTime = rateEntry.kind === 'oneTime' || row.mode === 'One-Time';
+  const freq = isOneTime ? null : (MODE_FREQ[row.mode] || 1);
   const premium = prufinModalPremium(row, freq);
   if(!premium) return [];
 
@@ -1226,34 +1261,42 @@ function prufinPaymentsIn2026(row){
   }
   return payments;
 }
-const PRUFIN_ORDINALS = ["1st","2nd","3rd","4th","5th","6th+"];
 /* Builds the full 2026 estimate: gross/net commission per calendar month,
    batched by policy year (1st Year Commissions, 2nd Year Commissions...),
-   plus a list of clients that couldn't be computed (no rate on file, or
+   the clients that make up each batch (for the click-to-view popup), and
+   a list of clients that couldn't be computed (no rate on file, or
    missing plan/premium data) so they can be checked manually. */
-function computePrufinEstimate(clients){
-  const batches = {}; // policyYear -> { gross:[12], net:[12] }
+function computePrufinEstimate(clients, overrides){
+  const batches = {}; // policyYear (capped at 6) -> { gross:[12], net:[12] }
+  const clientsByBatch = {}; // policyYear -> [{ name, plan, mode, premium, rate, months:[], gross, net }]
   const warnings = [];
   (clients || []).filter(row => row.status === 'Issued').forEach(row => {
-    const plan = prufinNormalizePlan(row.plan);
-    if(!plan){
-      warnings.push({ name: row.name || 'Unnamed client', reason: 'No plan selected' });
+    const name = row.name || 'Unnamed client';
+    const key = resolvePrufinPlanKey(row);
+    if(!key){
+      warnings.push({ name, reason: 'No plan selected' });
       return;
     }
-    if(PRUFIN_UNRATED_PLANS.includes(plan)){
-      warnings.push({ name: row.name || 'Unnamed client', reason: `No commission rate on file for ${plan}` });
+    const issuedDate = submittedDateFromMonth(row.submitted, 2026);
+    if(!issuedDate){
+      warnings.push({ name, reason: 'No issued date on file' });
       return;
     }
-    if(!COMMISSION_RATES[plan]){
-      warnings.push({ name: row.name || 'Unnamed client', reason: `Unrecognized plan "${plan}"` });
+    const issuedYear = issuedDate.getFullYear();
+    const rateEntry = prufinRateEntryFor(overrides, issuedYear, key);
+    if(!rateEntry){
+      warnings.push({ name, reason: `No commission rate set for "${key}" in ${issuedYear} — add it in the schedule above` });
       return;
     }
-    const payments = prufinPaymentsIn2026(row);
+    const payments = prufinPaymentsIn2026(row, rateEntry);
     if(!payments.length) return;
+
+    const perYear = {}; // policyYear (capped) -> { months:Set, gross, net }
     payments.forEach(p => {
-      const rate = prufinCommissionRate(row, p.policyYear);
+      const idx = prufinPolicyYearIndex(p.policyYear);
+      const rate = rateEntry.kind === 'oneTime' ? rateEntry.rate : rateEntry.rates[idx];
       if(rate == null){
-        warnings.push({ name: row.name || 'Unnamed client', reason: `No rate for ${plan}, policy year ${p.policyYear}` });
+        warnings.push({ name, reason: `No rate for "${key}", policy year ${p.policyYear}` });
         return;
       }
       const gross = rate * p.premium;
@@ -1262,7 +1305,27 @@ function computePrufinEstimate(clients){
       if(!batches[yearKey]) batches[yearKey] = { gross: Array(12).fill(0), net: Array(12).fill(0) };
       batches[yearKey].gross[p.monthIndex] += gross;
       batches[yearKey].net[p.monthIndex] += gross * (1 - PRUFIN_TAX_RATE);
+
+      if(!perYear[yearKey]) perYear[yearKey] = { months: new Set(), gross: 0, net: 0, rate };
+      perYear[yearKey].months.add(p.monthIndex);
+      perYear[yearKey].gross += gross;
+      perYear[yearKey].net += gross * (1 - PRUFIN_TAX_RATE);
     });
+
+    Object.keys(perYear).forEach(yearKey => {
+      const info = perYear[yearKey];
+      if(!clientsByBatch[yearKey]) clientsByBatch[yearKey] = [];
+      clientsByBatch[yearKey].push({
+        name, plan: prufinNormalizePlan(row.plan), mode: row.mode || '—',
+        premium: prufinModalPremium(row, row.mode === 'One-Time' ? null : (MODE_FREQ[row.mode] || 1)),
+        rate: info.rate,
+        months: [...info.months].sort((a, b) => a - b).map(i => MONTHS[i].slice(0, 3)),
+        gross: info.gross, net: info.net,
+      });
+    });
+  });
+  Object.keys(clientsByBatch).forEach(yearKey => {
+    clientsByBatch[yearKey].sort((a, b) => b.gross - a.gross);
   });
   const years = Object.keys(batches).map(Number).sort((a, b) => a - b);
   const overallGross = Array(12).fill(0);
@@ -1271,7 +1334,7 @@ function computePrufinEstimate(clients){
     batches[y].gross.forEach((v, i) => overallGross[i] += v);
     batches[y].net.forEach((v, i) => overallNet[i] += v);
   });
-  return { batches, years, overallGross, overallNet, warnings };
+  return { batches, years, overallGross, overallNet, warnings, clientsByBatch };
 }
 
 /* -- rolling-12-month FYP: paid premium installments inside the 12 calendar
@@ -1958,51 +2021,168 @@ async function renderRewardsPanel(){
   startYearCountdown();
 }
 
-/* -- PRUFINATED: commission rate reference + 2026 monthly estimate -- */
-function prufinRateTableHtml(){
-  const rows = [
-    ["PAA+ (below ₱36K APE)", ...COMMISSION_RATES["PAA+"].low],
-    ["PAA+ (₱36K APE & above)*", ...COMMISSION_RATES["PAA+"].high],
-    ["Exact 15", ...COMMISSION_RATES["Exact 15"].rates],
-    ["Exact 10", ...COMMISSION_RATES["Exact 10"].rates],
-    ["Exact 7", ...COMMISSION_RATES["Exact 7"].rates],
-    ["Exact 5", ...COMMISSION_RATES["Exact 5"].rates],
-    ["Elite 15", ...COMMISSION_RATES["Elite 15"].rates],
-    ["Elite 10", ...COMMISSION_RATES["Elite 10"].rates],
-    ["Elite 7", ...COMMISSION_RATES["Elite 7"].rates],
-    ["Elite 5", ...COMMISSION_RATES["Elite 5"].rates],
-    ["PLFL 5", ...COMMISSION_RATES["PLFL 5"].rates],
-    ["PLFL 10", ...COMMISSION_RATES["PLFL 10"].rates],
-    ["PLFL 15", ...COMMISSION_RATES["PLFL 15"].rates],
-    ["PLFL 20", ...COMMISSION_RATES["PLFL 20"].rates],
-    ["PLI 5", ...COMMISSION_RATES["PLI 5"].rates],
-    ["PLI 10", ...COMMISSION_RATES["PLI 10"].rates],
-    ["PHP", ...COMMISSION_RATES["PHP"].rates],
-    ["PYT (Annual mode)*", ...COMMISSION_RATES["PYT"].annual],
-    ["PYT (Monthly mode)*", ...COMMISSION_RATES["PYT"].monthly],
-  ];
-  const pct = v => `${(v * 100).toFixed(1).replace(/\.0$/, '')}%`;
-  return `
-    <div class="statistics-table-wrap">
-      <table class="statistics-table">
-        <thead><tr><th style="text-align:left;">Plan</th><th>1st Yr</th><th>2nd Yr</th><th>3rd Yr</th><th>4th Yr</th><th>5th Yr</th><th>6th Yr+</th></tr></thead>
-        <tbody>
-          ${rows.map(r => `<tr><td style="text-align:left;">${escapeHtml(r[0])}</td>${r.slice(1).map(v => `<td class="num">${pct(v)}</td>`).join('')}</tr>`).join('')}
-          <tr><td style="text-align:left;">PruMil (one-time)</td><td class="num">${pct(COMMISSION_RATES["PruMil"].rate)}</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
-          <tr><td style="text-align:left;">PIA (one-time)</td><td class="num">${pct(COMMISSION_RATES["PIA"].rate)}</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
-        </tbody>
-      </table>
+/* -- PRUFINATED: editable commission rate schedule + 2026 monthly estimate -- */
+let prufinActiveYear = 2026;
+let prufinActivePlanKey = PRUFIN_BASE_PLAN_KEYS[0];
+let prufinLastEstimate = null; // cached so the batch popup doesn't need to recompute
+
+function prufinAllPlanKeys(customPlans){
+  const extra = (customPlans || []).filter(p => !PRUFIN_BASE_PLAN_KEYS.includes(p));
+  return [...PRUFIN_BASE_PLAN_KEYS, ...extra].sort((a, b) => a.localeCompare(b));
+}
+function prufinPct(v){ return `${(v * 100).toFixed(2).replace(/\.?0+$/, '').replace(/^$/, '0')}%`; }
+
+function buildPrufinPanel(item, groupLabel){
+  const el = document.createElement('div');
+  el.className = 'leaf-view';
+  el.id = 'leaf-' + item.id;
+  el.innerHTML = `
+    <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
+    <h1>${item.label}</h1>
+    <div class="sub">${groupLabel} · commission rates and a live 2026 monthly estimate from your Issued Clients</div>
+
+    <div class="rewards-section">
+      <h2>Commission Rate Schedule</h2>
+      <div class="rs-sub">Rates can differ by production year. Pick a year, then a plan, to view or edit its schedule — or add a brand-new plan.</div>
+      <div class="prufin-year-tabs" id="prufin-year-tabs"></div>
+      <div id="prufin-rate-editor"></div>
     </div>
-    <div class="rs-sub" style="margin-top:8px;">*Rows marked with an asterisk have an assumption applied — see the note below the 2026 estimate. No rate is on file for PSI, PruWealth, PFL, or Takaful; clients on those plans are flagged instead of estimated. Rates from commission_table_for_pru.xlsx.</div>
+
+    <div id="prufin-mount"></div>
+
+    <div class="client-fyp-modal" id="prufin-modal" role="dialog" aria-modal="true" aria-labelledby="prufin-modal-title">
+      <div class="client-fyp-dialog">
+        <div class="client-fyp-head">
+          <div>
+            <h2 id="prufin-modal-title">Batch Breakdown</h2>
+            <p id="prufin-modal-sub">Clients contributing to this batch.</p>
+          </div>
+          <button class="client-fyp-close" aria-label="Close" onclick="closePrufinModal()">×</button>
+        </div>
+        <div id="prufin-modal-list"></div>
+      </div>
+    </div>
+  `;
+  return el;
+}
+
+function renderPrufinYearTabs(){
+  const mount = document.getElementById('prufin-year-tabs');
+  if(!mount) return;
+  mount.innerHTML = PRUFIN_RATE_YEARS.map(y => `
+    <button class="prufin-year-tab ${y === prufinActiveYear ? 'active' : ''}" onclick="selectPrufinYear(${y})">${y}${y === 2026 ? ' •' : ''}</button>
+  `).join('');
+}
+
+async function selectPrufinYear(year){
+  prufinActiveYear = year;
+  await renderPrufinRateEditor();
+}
+
+async function onPrufinPlanSelect(){
+  const select = document.getElementById('prufin-plan-select');
+  if(!select) return;
+  if(select.value === '__add_new__'){
+    const name = prompt('New plan name (e.g. PruShield):');
+    if(name && name.trim()){
+      const customPlans = await getEntries('prufin-custom-plans');
+      const trimmed = name.trim();
+      if(!customPlans.includes(trimmed) && !PRUFIN_BASE_PLAN_KEYS.includes(trimmed)){
+        customPlans.push(trimmed);
+        await saveEntries('prufin-custom-plans', customPlans);
+      }
+      prufinActivePlanKey = trimmed;
+    }
+    await renderPrufinRateEditor();
+    return;
+  }
+  prufinActivePlanKey = select.value;
+  await renderPrufinRateEditor();
+}
+
+async function renderPrufinRateEditor(){
+  const mount = document.getElementById('prufin-rate-editor');
+  if(!mount) return;
+  renderPrufinYearTabs();
+
+  const customPlans = await getEntries('prufin-custom-plans');
+  const overrides = await getEntries('prufin-rate-overrides');
+  const planKeys = prufinAllPlanKeys(customPlans);
+  if(!planKeys.includes(prufinActivePlanKey)) prufinActivePlanKey = planKeys[0];
+
+  const entry = prufinRateEntryFor(overrides, prufinActiveYear, prufinActivePlanKey);
+  const hasOverride = overrides.some(o => o.year === prufinActiveYear && o.key === prufinActivePlanKey);
+  const isDefault = !hasOverride && prufinActiveYear === 2026 && !!PRUFIN_DEFAULT_RATES_2026[prufinActivePlanKey];
+  const kind = entry ? entry.kind : (PRUFIN_DEFAULT_RATES_2026[prufinActivePlanKey]?.kind || 'yearly');
+  const badge = hasOverride
+    ? '<span class="prufin-badge custom">Custom</span>'
+    : isDefault ? '<span class="prufin-badge default">Factory default</span>' : '<span class="prufin-badge unset">Not set</span>';
+
+  const yearInputsHtml = kind === 'oneTime'
+    ? `<div class="prufin-rate-grid one-time">
+        <label>One-time rate<input type="number" step="0.01" id="prufin-rate-0" value="${entry ? (entry.rate * 100).toString() : ''}" placeholder="e.g. 2.25"></label>
+      </div>`
+    : `<div class="prufin-rate-grid">
+        ${PRUFIN_ORDINALS.map((label, i) => `<label>${label} yr<input type="number" step="0.01" id="prufin-rate-${i}" value="${entry ? (entry.rates[i] * 100).toString() : ''}" placeholder="%"></label>`).join('')}
+      </div>`;
+
+  mount.innerHTML = `
+    <div class="prufin-rate-editor-head">
+      <select id="prufin-plan-select" onchange="onPrufinPlanSelect()">
+        ${planKeys.map(k => `<option value="${escapeHtml(k)}" ${k === prufinActivePlanKey ? 'selected' : ''}>${escapeHtml(k)}</option>`).join('')}
+        <option value="__add_new__">+ Add new plan…</option>
+      </select>
+      ${badge}
+    </div>
+    <div class="rs-sub">Enter each rate as a percent (e.g. 30 for 30%). ${kind === 'oneTime' ? 'This plan pays a single one-time rate at issuance.' : ''}</div>
+    ${yearInputsHtml}
+    <div class="form-actions" style="margin-top:10px;">
+      <button class="primary" onclick="savePrufinRates('${kind}')">Save Rates for ${prufinActiveYear}</button>
+      ${hasOverride ? `<button class="clear-link" onclick="resetPrufinRates()">Reset to default</button>` : ''}
+    </div>
+    <div class="save-note" id="prufin-rate-savenote"></div>
   `;
 }
 
-function prufinMonthlyTableHtml(title, gross, net, subtitle){
+async function savePrufinRates(kind){
+  const overrides = await getEntries('prufin-rate-overrides');
+  const idx = overrides.findIndex(o => o.year === prufinActiveYear && o.key === prufinActivePlanKey);
+  let entry;
+  if(kind === 'oneTime'){
+    const v = parseFloat(document.getElementById('prufin-rate-0').value);
+    entry = { year: prufinActiveYear, key: prufinActivePlanKey, kind: 'oneTime', rate: isNaN(v) ? 0 : v / 100 };
+  }else{
+    const rates = PRUFIN_ORDINALS.map((_, i) => {
+      const v = parseFloat(document.getElementById('prufin-rate-' + i).value);
+      return isNaN(v) ? 0 : v / 100;
+    });
+    entry = { year: prufinActiveYear, key: prufinActivePlanKey, kind: 'yearly', rates };
+  }
+  if(idx >= 0) overrides[idx] = entry; else overrides.push(entry);
+  const ok = await saveEntries('prufin-rate-overrides', overrides);
+  const note = document.getElementById('prufin-rate-savenote');
+  if(note) note.textContent = ok ? 'Saved.' : 'Could not save — please try again.';
+  await renderPrufinRateEditor();
+  await renderPrufinPanel();
+}
+
+async function resetPrufinRates(){
+  const overrides = await getEntries('prufin-rate-overrides');
+  const filtered = overrides.filter(o => !(o.year === prufinActiveYear && o.key === prufinActivePlanKey));
+  await saveEntries('prufin-rate-overrides', filtered);
+  await renderPrufinRateEditor();
+  await renderPrufinPanel();
+}
+
+function prufinMonthlyTableHtml(title, gross, net, subtitle, batchKey){
   const totalGross = gross.reduce((a, b) => a + b, 0);
   const totalNet = net.reduce((a, b) => a + b, 0);
+  const clickable = batchKey != null;
   return `
     <div class="rewards-section">
-      <h2>${escapeHtml(title)}</h2>
+      <h2 class="${clickable ? 'prufin-clickable-title' : ''}" ${clickable ? `onclick="openPrufinBatchModal('${batchKey}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') openPrufinBatchModal('${batchKey}')"` : ''}>
+        ${escapeHtml(title)}${clickable ? ' <span class="prufin-view-clients">View clients →</span>' : ''}
+      </h2>
       ${subtitle ? `<div class="rs-sub">${subtitle}</div>` : ''}
       <div class="statistics-table-wrap">
         <table class="statistics-table">
@@ -2017,35 +2197,51 @@ function prufinMonthlyTableHtml(title, gross, net, subtitle){
   `;
 }
 
-function buildPrufinPanel(item, groupLabel){
-  const el = document.createElement('div');
-  el.className = 'leaf-view';
-  el.id = 'leaf-' + item.id;
-  el.innerHTML = `
-    <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
-    <h1>${item.label}</h1>
-    <div class="sub">${groupLabel} · commission rates and a live 2026 monthly estimate from your Issued Clients</div>
+function prufinBarChartHtml(years){
+  if(!prufinLastEstimate || !years.length) return '';
+  const rows = [];
+  years.forEach(y => {
+    const b = prufinLastEstimate.batches[y];
+    const label = `${PRUFIN_ORDINALS[y - 1] || y + 'th'} Year`;
+    rows.push({ label: label + ' · Gross', value: b.gross.reduce((a, c) => a + c, 0), cls: '' });
+    rows.push({ label: label + ' · Net', value: b.net.reduce((a, c) => a + c, 0), cls: 'net' });
+  });
+  const maximum = Math.max(...rows.map(r => r.value), 1);
+  return `
     <div class="rewards-section">
-      <h2>Commission Rate Schedule</h2>
-      <div class="rs-sub">Percent of modal premium paid to you, by plan and policy year.</div>
-      ${prufinRateTableHtml()}
+      <h2>Yearly Comparison — Gross vs Net</h2>
+      <div class="rs-sub">Total 2026 commission per policy-year batch, gross vs. after the 3% tax.</div>
+      <div class="statistics-chart-card">
+        <div class="statistics-bar-list">
+          ${rows.map(r => `
+            <div class="statistics-bar-row">
+              <div class="statistics-bar-label">${escapeHtml(r.label)}</div>
+              <div class="statistics-bar-track"><div class="statistics-bar-fill ${r.cls}" style="width:${(r.value / maximum) * 100}%"></div></div>
+              <div class="statistics-bar-value">${fmtCurrency(r.value)}</div>
+            </div>`).join('')}
+        </div>
+      </div>
     </div>
-    <div id="prufin-mount"></div>
   `;
-  return el;
 }
 
 async function renderPrufinPanel(){
+  await renderPrufinRateEditor();
   const mount = document.getElementById('prufin-mount');
   if(!mount) return; // panel not built yet
   const clients = await getEntries('pru-clients');
-  const est = computePrufinEstimate(clients);
+  const overrides = await getEntries('prufin-rate-overrides');
+  const est = computePrufinEstimate(clients, overrides);
+  prufinLastEstimate = est;
 
   const overallHtml = prufinMonthlyTableHtml(
     'Estimated 2026 Monthly Commissions — All Years Combined',
     est.overallGross, est.overallNet,
-    'Sum of every policy-year batch below. Estimates only, based on scheduled premium due dates.'
+    'Sum of every policy-year batch below. Estimates only, based on scheduled premium due dates.',
+    'all'
   );
+
+  const chartHtml = prufinBarChartHtml(est.years);
 
   const batchHtml = est.years.length
     ? est.years.map(y => prufinMonthlyTableHtml(
@@ -2053,14 +2249,15 @@ async function renderPrufinPanel(){
         est.batches[y].gross, est.batches[y].net,
         y === 1
           ? 'Clients within their first 12 months on the books.'
-          : `Clients now in year ${y} of their policy — issue dates don't line up, so each client lands in the month their own anniversary payment falls due.`
+          : `Clients now in year ${y} of their policy — issue dates don't line up, so each client lands in the month their own anniversary payment falls due.`,
+        String(y)
       )).join('')
     : `<div class="rewards-section"><div class="rs-sub">No Issued clients with a computable premium and rate were found yet.</div></div>`;
 
   const warningsHtml = est.warnings.length
     ? `<div class="rewards-section">
         <h2>Needs a Closer Look</h2>
-        <div class="rs-sub">These Issued clients were left out of the estimate above — fill in the missing field or confirm the plan to include them.</div>
+        <div class="rs-sub">These Issued clients were left out of the estimate above — fill in the missing field or add a rate to include them.</div>
         <div class="statistics-table-wrap"><table class="statistics-table">
           <thead><tr><th style="text-align:left;">Client</th><th style="text-align:left;">Why it's excluded</th></tr></thead>
           <tbody>${est.warnings.map(w => `<tr><td style="text-align:left;">${escapeHtml(w.name)}</td><td style="text-align:left;">${escapeHtml(w.reason)}</td></tr>`).join('')}</tbody>
@@ -2068,7 +2265,51 @@ async function renderPrufinPanel(){
       </div>`
     : '';
 
-  mount.innerHTML = overallHtml + batchHtml + warningsHtml;
+  mount.innerHTML = overallHtml + chartHtml + batchHtml + warningsHtml;
+}
+
+function openPrufinBatchModal(batchKey){
+  const modal = document.getElementById('prufin-modal');
+  const list = document.getElementById('prufin-modal-list');
+  if(!modal || !list || !prufinLastEstimate) return;
+
+  let rows = [];
+  let title = 'Batch Breakdown';
+  if(batchKey === 'all'){
+    title = 'All Years Combined · Client Breakdown';
+    Object.keys(prufinLastEstimate.clientsByBatch).forEach(y => {
+      prufinLastEstimate.clientsByBatch[y].forEach(c => rows.push({ ...c, yearLabel: `${PRUFIN_ORDINALS[y - 1] || y + 'th'} Yr` }));
+    });
+    rows.sort((a, b) => b.gross - a.gross);
+  }else{
+    const y = Number(batchKey);
+    title = `${PRUFIN_ORDINALS[y - 1] || y + 'th'} Year Commissions · Client Breakdown`;
+    rows = (prufinLastEstimate.clientsByBatch[y] || []).map(c => ({ ...c, yearLabel: `${PRUFIN_ORDINALS[y - 1] || y + 'th'} Yr` }));
+  }
+
+  document.getElementById('prufin-modal-title').textContent = title;
+  document.getElementById('prufin-modal-sub').textContent = `${rows.length} client${rows.length === 1 ? '' : 's'} contributing to this batch in 2026.`;
+  list.innerHTML = rows.length
+    ? `<table class="client-fyp-table">
+        <thead><tr><th>Client</th><th>Plan</th><th>Mode</th>${batchKey === 'all' ? '<th>Yr</th>' : ''}<th>Months Paid</th><th>Rate</th><th>Gross</th><th>Net</th></tr></thead>
+        <tbody>${rows.map(r => `
+          <tr>
+            <td>${escapeHtml(r.name)}</td>
+            <td>${escapeHtml(r.plan)}</td>
+            <td>${escapeHtml(r.mode)}</td>
+            ${batchKey === 'all' ? `<td>${escapeHtml(r.yearLabel)}</td>` : ''}
+            <td>${escapeHtml(r.months.join(', '))}</td>
+            <td class="num">${prufinPct(r.rate)}</td>
+            <td class="num">${fmtCurrency(r.gross)}</td>
+            <td class="num">${fmtCurrency(r.net)}</td>
+          </tr>`).join('')}</tbody>
+      </table>`
+    : '<div class="client-fyp-empty">No clients in this batch.</div>';
+  modal.classList.add('open');
+}
+function closePrufinModal(){
+  const modal = document.getElementById('prufin-modal');
+  if(modal) modal.classList.remove('open');
 }
 
 async function openRewardBreakdown(kind, key){
