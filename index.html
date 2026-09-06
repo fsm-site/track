@@ -922,6 +922,10 @@
   .prufin-summary-card.estimate h3{color:var(--brass-dark); font-size:16px;}
   .prufin-summary-card.actual{border-color:#2f6b4f; box-shadow:0 0 0 1px #2f6b4f inset;}
   .prufin-summary-card.actual h3{color:#2f6b4f; font-size:16px;}
+  .prufin-client-link{color:var(--navy); font-weight:700; text-decoration:none; cursor:pointer;}
+  .prufin-client-link:hover{color:var(--brass); text-decoration:underline;}
+  .prufin-tracker-table td.prufin-na{color:var(--ink-soft); opacity:.5;}
+  .prufin-tracker-table th{white-space:nowrap;}
   .statistics-bar-value{color:var(--navy); font-weight:700; white-space:nowrap;}
   .statistics-assessment{margin-top:28px; padding:20px 24px; border:1px solid var(--brass); border-radius:14px; background:linear-gradient(135deg,#fff,var(--brass-soft) 220%); color:var(--navy);}
   .statistics-assessment h2{margin:0 0 8px; font-size:17px;}
@@ -2139,6 +2143,19 @@ function buildPrufinPanel(item, groupLabel){
         <div id="prufin-modal-list"></div>
       </div>
     </div>
+
+    <div class="client-fyp-modal" id="prufin-client-modal" role="dialog" aria-modal="true" aria-labelledby="prufin-client-modal-title">
+      <div class="client-fyp-dialog">
+        <div class="client-fyp-head">
+          <div>
+            <h2 id="prufin-client-modal-title">Client</h2>
+            <p id="prufin-client-modal-sub">Monthly commission breakdown.</p>
+          </div>
+          <button class="client-fyp-close" aria-label="Close" onclick="closePrufinClientModal()">×</button>
+        </div>
+        <div id="prufin-client-modal-list"></div>
+      </div>
+    </div>
   `;
   return el;
 }
@@ -2421,14 +2438,23 @@ async function renderPrufinActualSection(){
   const paidSet = new Set(tracker.filter(t => t.year === prufinViewYear).map(t => t.clientKey + '|' + t.monthIndex));
 
   let actualGross = 0, actualNet = 0, estGross = 0, estNet = 0;
-  const byMonth = {}; // monthIndex -> rows[]
+  const byClient = {}; // clientKey -> { name, clientType, plan, mode, months:{monthIndex:{gross,net,rate,paid}} }
   est.paymentsFlat.forEach(p => {
     estGross += p.gross; estNet += p.net;
     const paid = paidSet.has(p.clientKey + '|' + p.monthIndex);
     if(paid){ actualGross += p.gross; actualNet += p.net; }
-    if(!byMonth[p.monthIndex]) byMonth[p.monthIndex] = [];
-    byMonth[p.monthIndex].push({ ...p, paid });
+    if(!byClient[p.clientKey]) byClient[p.clientKey] = { clientKey: p.clientKey, name: p.name, clientType: p.clientType, plan: p.plan, mode: p.mode, months: {} };
+    if(!byClient[p.clientKey].months[p.monthIndex]) byClient[p.clientKey].months[p.monthIndex] = { gross: 0, net: 0 };
+    byClient[p.clientKey].months[p.monthIndex].gross += p.gross;
+    byClient[p.clientKey].months[p.monthIndex].net += p.net;
+    byClient[p.clientKey].months[p.monthIndex].paid = paid;
   });
+  const clientRows = Object.values(byClient).sort((a, b) => a.name.localeCompare(b.name));
+  clientRows.forEach(c => {
+    const nets = Object.values(c.months).map(m => m.net);
+    c.refNet = nets.length ? nets.reduce((a, b) => a + b, 0) / nets.length : 0;
+  });
+  prufinActualClientRows = clientRows; // cached for the client-detail popup
 
   const collectionRate = estGross ? (actualGross / estGross) * 100 : 0;
   const summaryHtml = `
@@ -2439,29 +2465,69 @@ async function renderPrufinActualSection(){
     </div>
   `;
 
-  const allRows = [];
-  visibleIdx.forEach(i => { (byMonth[i] || []).forEach(r => allRows.push(r)); });
-  allRows.sort((a, b) => a.monthIndex - b.monthIndex || a.name.localeCompare(b.name));
-
-  const tableHtml = allRows.length
+  const tableHtml = clientRows.length
     ? `<div class="statistics-table-wrap">
-        <table class="statistics-table">
-          <thead><tr><th style="text-align:left;">Month</th><th style="text-align:left;">Client</th><th style="text-align:left;">Plan</th><th>Rate</th><th>Gross</th><th>Net</th><th>Paid?</th></tr></thead>
-          <tbody>${allRows.map(r => `
+        <table class="statistics-table prufin-tracker-table">
+          <thead><tr>
+            <th style="text-align:left;">Client</th>
+            <th style="text-align:left;">Type</th>
+            <th style="text-align:left;">Plan</th>
+            <th style="text-align:left;">Mode</th>
+            <th>Net/Payment</th>
+            ${visibleIdx.map(i => `<th>${MONTHS[i].slice(0,3)}</th>`).join('')}
+          </tr></thead>
+          <tbody>${clientRows.map(c => `
             <tr>
-              <td style="text-align:left;">${MONTHS[r.monthIndex].slice(0,3)} ${prufinViewYear}</td>
-              <td style="text-align:left;">${escapeHtml(r.name)}</td>
-              <td style="text-align:left;">${escapeHtml(r.plan)}</td>
-              <td class="num">${prufinPct(r.rate)}</td>
-              <td class="num">${fmtCurrency(r.gross)}</td>
-              <td class="num">${fmtCurrency(r.net)}</td>
-              <td class="num"><input type="checkbox" ${r.paid ? 'checked' : ''} onchange="togglePrufinPaid('${prufinJsStr(r.clientKey)}', ${r.monthIndex}, ${prufinViewYear}, this.checked)"></td>
+              <td style="text-align:left;"><a href="javascript:void(0)" class="prufin-client-link" onclick="openPrufinClientModal('${prufinJsStr(c.clientKey)}')">${escapeHtml(c.name)}</a></td>
+              <td style="text-align:left;">${escapeHtml(c.clientType)}</td>
+              <td style="text-align:left;">${escapeHtml(c.plan)}</td>
+              <td style="text-align:left;">${escapeHtml(c.mode)}</td>
+              <td class="num">${fmtCurrency(c.refNet)}</td>
+              ${visibleIdx.map(i => c.months[i]
+                ? `<td class="num"><input type="checkbox" ${c.months[i].paid ? 'checked' : ''} onchange="togglePrufinPaid('${prufinJsStr(c.clientKey)}', ${i}, ${prufinViewYear}, this.checked)"></td>`
+                : `<td class="num prufin-na">—</td>`
+              ).join('')}
             </tr>`).join('')}</tbody>
         </table>
       </div>`
     : `<div class="rs-sub">No expected payments for ${prufinViewYear} yet.</div>`;
 
   mount.innerHTML = summaryHtml + tableHtml;
+}
+
+let prufinActualClientRows = [];
+function openPrufinClientModal(clientKey){
+  const modal = document.getElementById('prufin-client-modal');
+  const list = document.getElementById('prufin-client-modal-list');
+  if(!modal || !list) return;
+  const c = prufinActualClientRows.find(r => r.clientKey === clientKey);
+  if(!c) return;
+
+  document.getElementById('prufin-client-modal-title').textContent = c.name;
+  document.getElementById('prufin-client-modal-sub').textContent = `${c.clientType} · ${c.plan} · ${c.mode} · ${prufinViewYear}`;
+
+  const monthRows = Object.keys(c.months).map(Number).sort((a, b) => a - b).map(i => {
+    const m = c.months[i];
+    return `<tr><td style="text-align:left;">${MONTHS[i]}</td><td class="num">${fmtCurrency(m.gross)}</td><td class="num">${fmtCurrency(m.net)}</td><td class="num">${m.paid ? '✅ Paid' : '— Not yet'}</td></tr>`;
+  }).join('');
+  const totalGross = Object.values(c.months).reduce((a, m) => a + m.gross, 0);
+  const totalNet = Object.values(c.months).reduce((a, m) => a + m.net, 0);
+  const paidGross = Object.values(c.months).filter(m => m.paid).reduce((a, m) => a + m.gross, 0);
+  const paidNet = Object.values(c.months).filter(m => m.paid).reduce((a, m) => a + m.net, 0);
+
+  list.innerHTML = `
+    <table class="client-fyp-table">
+      <thead><tr><th style="text-align:left;">Month</th><th>Gross</th><th>Net</th><th>Status</th></tr></thead>
+      <tbody>${monthRows}</tbody>
+      <tfoot><tr><td style="text-align:left; font-weight:700;">Total</td><td class="num" style="font-weight:700;">${fmtCurrency(totalGross)}</td><td class="num" style="font-weight:700;">${fmtCurrency(totalNet)}</td><td></td></tr>
+      <tr><td style="text-align:left; font-weight:700;">Paid so far</td><td class="num" style="font-weight:700;">${fmtCurrency(paidGross)}</td><td class="num" style="font-weight:700;">${fmtCurrency(paidNet)}</td><td></td></tr></tfoot>
+    </table>
+  `;
+  modal.classList.add('open');
+}
+function closePrufinClientModal(){
+  const modal = document.getElementById('prufin-client-modal');
+  if(modal) modal.classList.remove('open');
 }
 
 async function renderPrufinPanel(){
