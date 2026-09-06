@@ -915,6 +915,13 @@
   .rewards-subsection{margin-top:20px; padding-top:16px; border-top:1px solid var(--line);}
   .rewards-subsection:first-child{margin-top:0; padding-top:0; border-top:none;}
   .rewards-subsection h3{margin:0 0 4px; color:var(--navy); font-size:14.5px;}
+  .prufin-section-title{font-size:22px !important; font-weight:800; padding:10px 16px; border-radius:12px; display:inline-block; margin-bottom:4px !important;}
+  .prufin-section-title.estimate{background:var(--brass-soft); color:var(--brass-dark);}
+  .prufin-section-title.actual{background:#e4eee7; color:#2f6b4f;}
+  .prufin-summary-card.estimate{border-color:var(--brass); box-shadow:0 0 0 1px var(--brass) inset;}
+  .prufin-summary-card.estimate h3{color:var(--brass-dark); font-size:16px;}
+  .prufin-summary-card.actual{border-color:#2f6b4f; box-shadow:0 0 0 1px #2f6b4f inset;}
+  .prufin-summary-card.actual h3{color:#2f6b4f; font-size:16px;}
   .statistics-bar-value{color:var(--navy); font-weight:700; white-space:nowrap;}
   .statistics-assessment{margin-top:28px; padding:20px 24px; border:1px solid var(--brass); border-radius:14px; background:linear-gradient(135deg,#fff,var(--brass-soft) 220%); color:var(--navy);}
   .statistics-assessment h2{margin:0 0 8px; font-size:17px;}
@@ -2108,14 +2115,14 @@ function buildPrufinPanel(item, groupLabel){
     </div>
 
     <div class="rewards-section">
-      <h2>Estimated Monthly Commissions</h2>
+      <h2 class="prufin-section-title estimate">💰 Estimated Monthly Commissions</h2>
       <div class="rs-sub">Commissions are only shown from August 2022 onwards, and Lapsed clients are always excluded.</div>
       <div id="prufin-controls"></div>
       <div id="prufin-mount"></div>
     </div>
 
     <div class="rewards-section">
-      <h2>Actual Commissions — Payment Tracker</h2>
+      <h2 class="prufin-section-title actual">✅ Actual Commissions — Payment Tracker</h2>
       <div class="rs-sub">Tick a month once the client's premium is actually paid. Actual totals below update automatically.</div>
       <div id="prufin-actual-mount"></div>
     </div>
@@ -2426,36 +2433,35 @@ async function renderPrufinActualSection(){
   const collectionRate = estGross ? (actualGross / estGross) * 100 : 0;
   const summaryHtml = `
     <div class="statistics-grid" style="margin-bottom:16px;">
-      <div class="statistics-card"><h3>Estimated</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(estGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(estNet)}</div></div></div></div>
-      <div class="statistics-card"><h3>Actual (Paid)</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(actualGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(actualNet)}</div></div></div></div>
+      <div class="statistics-card prufin-summary-card estimate"><h3>Estimated</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(estGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(estNet)}</div></div></div></div>
+      <div class="statistics-card prufin-summary-card actual"><h3>Actual (Paid)</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(actualGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(actualNet)}</div></div></div></div>
       <div class="statistics-card"><h3>Collected</h3><div class="statistics-values"><div><div class="statistics-label">% of Estimated Gross</div><div class="statistics-value">${collectionRate.toFixed(1)}%</div></div></div></div>
     </div>
   `;
 
-  const monthGroups = visibleIdx.filter(i => byMonth[i] && byMonth[i].length).map(i => {
-    const rows = byMonth[i].sort((a, b) => a.name.localeCompare(b.name));
-    return `
-      <div class="rewards-subsection">
-        <h3>${MONTHS[i]} ${prufinViewYear}</h3>
-        <div class="statistics-table-wrap">
-          <table class="statistics-table">
-            <thead><tr><th style="text-align:left;">Client</th><th style="text-align:left;">Plan</th><th>Rate</th><th>Gross</th><th>Net</th><th>Paid?</th></tr></thead>
-            <tbody>${rows.map(r => `
-              <tr>
-                <td style="text-align:left;">${escapeHtml(r.name)}</td>
-                <td style="text-align:left;">${escapeHtml(r.plan)}</td>
-                <td class="num">${prufinPct(r.rate)}</td>
-                <td class="num">${fmtCurrency(r.gross)}</td>
-                <td class="num">${fmtCurrency(r.net)}</td>
-                <td class="num"><input type="checkbox" ${r.paid ? 'checked' : ''} onchange="togglePrufinPaid('${prufinJsStr(r.clientKey)}', ${r.monthIndex}, ${prufinViewYear}, this.checked)"></td>
-              </tr>`).join('')}</tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  }).join('');
+  const allRows = [];
+  visibleIdx.forEach(i => { (byMonth[i] || []).forEach(r => allRows.push(r)); });
+  allRows.sort((a, b) => a.monthIndex - b.monthIndex || a.name.localeCompare(b.name));
 
-  mount.innerHTML = summaryHtml + (monthGroups || `<div class="rs-sub">No expected payments for ${prufinViewYear} yet.</div>`);
+  const tableHtml = allRows.length
+    ? `<div class="statistics-table-wrap">
+        <table class="statistics-table">
+          <thead><tr><th style="text-align:left;">Month</th><th style="text-align:left;">Client</th><th style="text-align:left;">Plan</th><th>Rate</th><th>Gross</th><th>Net</th><th>Paid?</th></tr></thead>
+          <tbody>${allRows.map(r => `
+            <tr>
+              <td style="text-align:left;">${MONTHS[r.monthIndex].slice(0,3)} ${prufinViewYear}</td>
+              <td style="text-align:left;">${escapeHtml(r.name)}</td>
+              <td style="text-align:left;">${escapeHtml(r.plan)}</td>
+              <td class="num">${prufinPct(r.rate)}</td>
+              <td class="num">${fmtCurrency(r.gross)}</td>
+              <td class="num">${fmtCurrency(r.net)}</td>
+              <td class="num"><input type="checkbox" ${r.paid ? 'checked' : ''} onchange="togglePrufinPaid('${prufinJsStr(r.clientKey)}', ${r.monthIndex}, ${prufinViewYear}, this.checked)"></td>
+            </tr>`).join('')}</tbody>
+        </table>
+      </div>`
+    : `<div class="rs-sub">No expected payments for ${prufinViewYear} yet.</div>`;
+
+  mount.innerHTML = summaryHtml + tableHtml;
 }
 
 async function renderPrufinPanel(){
