@@ -907,6 +907,14 @@
   .prufin-clickable-title:hover{color:var(--brass-dark);}
   .prufin-view-clients{font-size:11.5px; font-weight:600; color:var(--brass); text-transform:none; letter-spacing:0;}
   @media(max-width:700px){.prufin-rate-grid{grid-template-columns:repeat(3,1fr);}}
+  .prufin-stats-link{all:unset; cursor:pointer; display:inline-block; margin:4px 0 18px; padding:8px 16px; border-radius:999px; font-size:12.5px; font-weight:700; color:#fff; background:var(--navy);}
+  .prufin-stats-link:hover{background:var(--brass);}
+  .prufin-controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:16px;}
+  .prufin-controls-label{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
+  .prufin-controls-label select{width:auto; padding:7px 10px; font-size:13px; border-radius:8px; border:1px solid var(--line); font-family:inherit;}
+  .rewards-subsection{margin-top:20px; padding-top:16px; border-top:1px solid var(--line);}
+  .rewards-subsection:first-child{margin-top:0; padding-top:0; border-top:none;}
+  .rewards-subsection h3{margin:0 0 4px; color:var(--navy); font-size:14.5px;}
   .statistics-bar-value{color:var(--navy); font-weight:700; white-space:nowrap;}
   .statistics-assessment{margin-top:28px; padding:20px 24px; border:1px solid var(--brass); border-radius:14px; background:linear-gradient(135deg,#fff,var(--brass-soft) 220%); color:var(--navy);}
   .statistics-assessment h2{margin:0 0 8px; font-size:17px;}
@@ -965,6 +973,7 @@
     <div class="box-grid" id="box-grid"></div>
     <div id="leaf-mount"></div>
     <div id="statistics-mount" class="statistics-view"></div>
+    <div id="prufin-statistics-mount" class="statistics-view"></div>
     <footer class="app-footer"><button type="button" onclick="openStatistics()">Statistics</button></footer>
   </main>
 </div>
@@ -1150,6 +1159,10 @@ const LEAD_NEEDS = ["Life Insurance","Health Insurance","Investments","Guarantee
 const PRUFIN_RATE_YEARS = [2022,2023,2024,2025,2026,2027,2028,2029,2030];
 const PRUFIN_TAX_RATE = 0.03; // 3% withholding, applied to gross to get net
 const PRUFIN_ORDINALS = ["1st","2nd","3rd","4th","5th","6th+"];
+/* No commissions are estimated or tracked before this date — the agent
+   started production in August 2022, so earlier months are out of scope
+   even for clients whose issue date somehow predates it. */
+const PRUFIN_AGENT_START = new Date(2022, 7, 1);
 
 const PRUFIN_DEFAULT_RATES_2026 = {
   "PAA+ (below ₱36K APE)":    { kind:'yearly', rates:[0.30,0.20,0.05,0.05,0.05,0.00] },
@@ -1226,16 +1239,32 @@ function prufinModalPremium(row, freq){
   if(!ape) return 0;
   return freq ? ape / freq : ape;
 }
+/* Which months of a calendar year are in scope: everything, except in
+   2022 itself only August–December count (agent started August 2022). */
+function prufinVisibleMonthIndexes(year){
+  if(year > PRUFIN_AGENT_START.getFullYear()) return [0,1,2,3,4,5,6,7,8,9,10,11];
+  if(year < PRUFIN_AGENT_START.getFullYear()) return [];
+  return [7,8,9,10,11];
+}
+/* Stable identifier for a client row, used to key the Actual-commissions
+   payment tracker. Prefers Policy Number (meant to be unique); falls
+   back to name + issued date for records without one yet. */
+function prufinClientKey(row){
+  const pn = String(row.policyNumber || '').trim();
+  if(pn) return 'pn:' + pn;
+  return 'nm:' + String(row.name || '').trim().toLowerCase() + '|' + String(row.submitted || '').trim();
+}
 /* Generates every commission-bearing payment that lands inside calendar
-   year 2026 for one Issued client, each tagged with its policy year
-   (1st, 2nd, 3rd...) so multi-year clients batch correctly even though
-   not everyone shares the same issue date. Mode of Payment left blank
-   defaults to an annual (once-per-policy-year) cadence rather than a
-   single lifetime payment, so renewal-year commissions still show up in
-   later years for records that didn't record a Mode. */
-function prufinPaymentsIn2026(row, rateEntry){
+   year `targetYear` for one Issued client (and on/after August 2022),
+   each tagged with its policy year (1st, 2nd, 3rd...) so multi-year
+   clients batch correctly even though not everyone shares the same issue
+   date. Mode of Payment left blank defaults to an annual (once-per-
+   policy-year) cadence rather than a single lifetime payment, so renewal-
+   year commissions still show up in later years for records that didn't
+   record a Mode. */
+function prufinPaymentsInYear(row, rateEntry, targetYear){
   if(!row || row.status !== 'Issued') return [];
-  const issuedDate = submittedDateFromMonth(row.submitted, 2026);
+  const issuedDate = submittedDateFromMonth(row.submitted, targetYear);
   if(!issuedDate) return [];
   const isOneTime = rateEntry.kind === 'oneTime' || row.mode === 'One-Time';
   const freq = isOneTime ? null : (MODE_FREQ[row.mode] || 1);
@@ -1243,87 +1272,109 @@ function prufinPaymentsIn2026(row, rateEntry){
   if(!premium) return [];
 
   if(isOneTime){
-    if(issuedDate.getFullYear() !== 2026) return [];
+    if(issuedDate.getFullYear() !== targetYear) return [];
+    if(issuedDate < PRUFIN_AGENT_START) return [];
     return [{ monthIndex: issuedDate.getMonth(), policyYear: 1, premium }];
   }
 
   const intervalMonths = 12 / freq;
-  const yearStart = new Date(2026, 0, 1);
-  const yearEnd = new Date(2026, 11, 31);
+  const yearStart = new Date(targetYear, 0, 1);
+  const yearEnd = new Date(targetYear, 11, 31);
+  const floor = yearStart > PRUFIN_AGENT_START ? yearStart : PRUFIN_AGENT_START;
   const payments = [];
-  for(let k = 0; k < 600; k++){
+  for(let k = 0; k < 1200; k++){
     const payDate = prufinAddMonths(issuedDate, k * intervalMonths);
     if(payDate > yearEnd) break;
-    if(payDate >= yearStart){
+    if(payDate >= floor){
       const monthsElapsed = prufinMonthDiff(issuedDate, payDate);
       payments.push({ monthIndex: payDate.getMonth(), policyYear: Math.floor(monthsElapsed / 12) + 1, premium });
     }
   }
   return payments;
 }
-/* Builds the full 2026 estimate: gross/net commission per calendar month,
-   batched by policy year (1st Year Commissions, 2nd Year Commissions...),
-   the clients that make up each batch (for the click-to-view popup), and
-   a list of clients that couldn't be computed (no rate on file, or
-   missing plan/premium data) so they can be checked manually. */
-function computePrufinEstimate(clients, overrides){
+function prufinMatchesFilter(row, filter){
+  if(!filter || filter === 'all') return true;
+  const type = (row.clientType || 'Own').toLowerCase();
+  return type === filter;
+}
+/* Builds the full estimate for `targetYear`: gross/net commission per
+   calendar month, batched by policy year (1st Year Commissions, 2nd Year
+   Commissions...), the clients that make up each batch (for the
+   click-to-view popup), a flat list of every individual payment (used by
+   the Actual-commissions tracker), and a list of clients that couldn't be
+   computed (no rate on file, or missing plan/premium data) so they can be
+   checked manually. Lapsed and non-Issued clients are always excluded;
+   `filter` narrows further to 'own', 'adopted', or 'all'. */
+function computePrufinEstimate(clients, overrides, targetYear, filter){
   const batches = {}; // policyYear (capped at 6) -> { gross:[12], net:[12] }
   const clientsByBatch = {}; // policyYear -> [{ name, plan, mode, premium, rate, months:[], gross, net }]
   const warnings = [];
-  (clients || []).filter(row => row.status === 'Issued').forEach(row => {
-    const name = row.name || 'Unnamed client';
-    const key = resolvePrufinPlanKey(row);
-    if(!key){
-      warnings.push({ name, reason: 'No plan selected' });
-      return;
-    }
-    const issuedDate = submittedDateFromMonth(row.submitted, 2026);
-    if(!issuedDate){
-      warnings.push({ name, reason: 'No issued date on file' });
-      return;
-    }
-    const issuedYear = issuedDate.getFullYear();
-    const rateEntry = prufinRateEntryFor(overrides, issuedYear, key);
-    if(!rateEntry){
-      warnings.push({ name, reason: `No commission rate set for "${key}" in ${issuedYear} — add it in the schedule above` });
-      return;
-    }
-    const payments = prufinPaymentsIn2026(row, rateEntry);
-    if(!payments.length) return;
-
-    const perYear = {}; // policyYear (capped) -> { months:Set, gross, net }
-    payments.forEach(p => {
-      const idx = prufinPolicyYearIndex(p.policyYear);
-      const rate = rateEntry.kind === 'oneTime' ? rateEntry.rate : rateEntry.rates[idx];
-      if(rate == null){
-        warnings.push({ name, reason: `No rate for "${key}", policy year ${p.policyYear}` });
+  const paymentsFlat = [];
+  (clients || [])
+    .filter(row => row.status === 'Issued')
+    .filter(row => prufinMatchesFilter(row, filter))
+    .forEach(row => {
+      const name = row.name || 'Unnamed client';
+      const key = resolvePrufinPlanKey(row);
+      if(!key){
+        warnings.push({ name, reason: 'No plan selected' });
         return;
       }
-      const gross = rate * p.premium;
-      if(!gross) return;
-      const yearKey = Math.min(p.policyYear, 6);
-      if(!batches[yearKey]) batches[yearKey] = { gross: Array(12).fill(0), net: Array(12).fill(0) };
-      batches[yearKey].gross[p.monthIndex] += gross;
-      batches[yearKey].net[p.monthIndex] += gross * (1 - PRUFIN_TAX_RATE);
+      const issuedDate = submittedDateFromMonth(row.submitted, targetYear);
+      if(!issuedDate){
+        warnings.push({ name, reason: 'No issued date on file' });
+        return;
+      }
+      const issuedYear = issuedDate.getFullYear();
+      const rateEntry = prufinRateEntryFor(overrides, issuedYear, key);
+      if(!rateEntry){
+        warnings.push({ name, reason: `No commission rate set for "${key}" in ${issuedYear} — add it in the schedule above` });
+        return;
+      }
+      const payments = prufinPaymentsInYear(row, rateEntry, targetYear);
+      if(!payments.length) return;
+      const clientKey = prufinClientKey(row);
+      const clientType = row.clientType || 'Own';
 
-      if(!perYear[yearKey]) perYear[yearKey] = { months: new Set(), gross: 0, net: 0, rate };
-      perYear[yearKey].months.add(p.monthIndex);
-      perYear[yearKey].gross += gross;
-      perYear[yearKey].net += gross * (1 - PRUFIN_TAX_RATE);
-    });
+      const perYear = {}; // policyYear (capped) -> { months:Set, gross, net }
+      payments.forEach(p => {
+        const idx = prufinPolicyYearIndex(p.policyYear);
+        const rate = rateEntry.kind === 'oneTime' ? rateEntry.rate : rateEntry.rates[idx];
+        if(rate == null){
+          warnings.push({ name, reason: `No rate for "${key}", policy year ${p.policyYear}` });
+          return;
+        }
+        const gross = rate * p.premium;
+        if(!gross) return;
+        const net = gross * (1 - PRUFIN_TAX_RATE);
+        const yearKey = Math.min(p.policyYear, 6);
+        if(!batches[yearKey]) batches[yearKey] = { gross: Array(12).fill(0), net: Array(12).fill(0) };
+        batches[yearKey].gross[p.monthIndex] += gross;
+        batches[yearKey].net[p.monthIndex] += net;
 
-    Object.keys(perYear).forEach(yearKey => {
-      const info = perYear[yearKey];
-      if(!clientsByBatch[yearKey]) clientsByBatch[yearKey] = [];
-      clientsByBatch[yearKey].push({
-        name, plan: prufinNormalizePlan(row.plan), mode: row.mode || '—',
-        premium: prufinModalPremium(row, row.mode === 'One-Time' ? null : (MODE_FREQ[row.mode] || 1)),
-        rate: info.rate,
-        months: [...info.months].sort((a, b) => a - b).map(i => MONTHS[i].slice(0, 3)),
-        gross: info.gross, net: info.net,
+        if(!perYear[yearKey]) perYear[yearKey] = { months: new Set(), gross: 0, net: 0, rate };
+        perYear[yearKey].months.add(p.monthIndex);
+        perYear[yearKey].gross += gross;
+        perYear[yearKey].net += net;
+
+        paymentsFlat.push({
+          clientKey, name, plan: prufinNormalizePlan(row.plan), mode: row.mode || '—', clientType,
+          monthIndex: p.monthIndex, policyYear: p.policyYear, rate, premium: p.premium, gross, net,
+        });
+      });
+
+      Object.keys(perYear).forEach(yearKey => {
+        const info = perYear[yearKey];
+        if(!clientsByBatch[yearKey]) clientsByBatch[yearKey] = [];
+        clientsByBatch[yearKey].push({
+          name, plan: prufinNormalizePlan(row.plan), mode: row.mode || '—',
+          premium: prufinModalPremium(row, row.mode === 'One-Time' ? null : (MODE_FREQ[row.mode] || 1)),
+          rate: info.rate,
+          months: [...info.months].sort((a, b) => a - b).map(i => MONTHS[i].slice(0, 3)),
+          gross: info.gross, net: info.net,
+        });
       });
     });
-  });
   Object.keys(clientsByBatch).forEach(yearKey => {
     clientsByBatch[yearKey].sort((a, b) => b.gross - a.gross);
   });
@@ -1334,7 +1385,7 @@ function computePrufinEstimate(clients, overrides){
     batches[y].gross.forEach((v, i) => overallGross[i] += v);
     batches[y].net.forEach((v, i) => overallNet[i] += v);
   });
-  return { batches, years, overallGross, overallNet, warnings, clientsByBatch };
+  return { targetYear, filter: filter || 'all', batches, years, overallGross, overallNet, warnings, clientsByBatch, paymentsFlat };
 }
 
 /* -- rolling-12-month FYP: paid premium installments inside the 12 calendar
@@ -1463,7 +1514,7 @@ let statisticsOpen = false;
 const VIEW_STATE_KEY = 'bams-masterlist-view';
 
 function saveViewState(){
-  sessionStorage.setItem(VIEW_STATE_KEY, JSON.stringify({ activeGroup, activeLeaf, statisticsOpen }));
+  sessionStorage.setItem(VIEW_STATE_KEY, JSON.stringify({ activeGroup, activeLeaf, statisticsOpen, prufinStatsOpen }));
 }
 
 function restoreViewState(){
@@ -1476,6 +1527,7 @@ function restoreViewState(){
       activeLeaf = leaf ? leaf.id : null;
     }
     statisticsOpen = Boolean(saved?.statisticsOpen);
+    prufinStatsOpen = Boolean(saved?.prufinStatsOpen);
   }catch(error){
     sessionStorage.removeItem(VIEW_STATE_KEY);
   }
@@ -2021,16 +2073,22 @@ async function renderRewardsPanel(){
   startYearCountdown();
 }
 
-/* -- PRUFINATED: editable commission rate schedule + 2026 monthly estimate -- */
-let prufinActiveYear = 2026;
+/* -- PRUFINATED: editable commission rate schedule, a year/filter-aware
+   monthly estimate, and an Actual-commissions payment tracker. The bar
+   charts and yearly overview live on a separate Prufin Statistics page
+   (see further below) to keep this tab focused. -- */
+let prufinActiveYear = 2026;           // year being viewed/edited in the RATE SCHEDULE editor
 let prufinActivePlanKey = PRUFIN_BASE_PLAN_KEYS[0];
-let prufinLastEstimate = null; // cached so the batch popup doesn't need to recompute
+let prufinViewYear = 2026;             // year being viewed in the Estimated/Actual sections
+let prufinClientFilter = 'all';        // 'all' | 'own' | 'adopted'
+let prufinLastEstimate = null;         // cached so the batch popup doesn't need to recompute
 
 function prufinAllPlanKeys(customPlans){
   const extra = (customPlans || []).filter(p => !PRUFIN_BASE_PLAN_KEYS.includes(p));
   return [...PRUFIN_BASE_PLAN_KEYS, ...extra].sort((a, b) => a.localeCompare(b));
 }
 function prufinPct(v){ return `${(v * 100).toFixed(2).replace(/\.?0+$/, '').replace(/^$/, '0')}%`; }
+function prufinJsStr(s){ return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 function buildPrufinPanel(item, groupLabel){
   const el = document.createElement('div');
@@ -2039,7 +2097,8 @@ function buildPrufinPanel(item, groupLabel){
   el.innerHTML = `
     <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
     <h1>${item.label}</h1>
-    <div class="sub">${groupLabel} · commission rates and a live 2026 monthly estimate from your Issued Clients</div>
+    <div class="sub">${groupLabel} · commission rates, a monthly estimate, and an actual-payment tracker from your Issued Clients</div>
+    <button class="prufin-stats-link" onclick="openPrufinStatistics()">📊 View Prufin Statistics</button>
 
     <div class="rewards-section">
       <h2>Commission Rate Schedule</h2>
@@ -2048,7 +2107,18 @@ function buildPrufinPanel(item, groupLabel){
       <div id="prufin-rate-editor"></div>
     </div>
 
-    <div id="prufin-mount"></div>
+    <div class="rewards-section">
+      <h2>Estimated Monthly Commissions</h2>
+      <div class="rs-sub">Commissions are only shown from August 2022 onwards, and Lapsed clients are always excluded.</div>
+      <div id="prufin-controls"></div>
+      <div id="prufin-mount"></div>
+    </div>
+
+    <div class="rewards-section">
+      <h2>Actual Commissions — Payment Tracker</h2>
+      <div class="rs-sub">Tick a month once the client's premium is actually paid. Actual totals below update automatically.</div>
+      <div id="prufin-actual-mount"></div>
+    </div>
 
     <div class="client-fyp-modal" id="prufin-modal" role="dialog" aria-modal="true" aria-labelledby="prufin-modal-title">
       <div class="client-fyp-dialog">
@@ -2066,6 +2136,7 @@ function buildPrufinPanel(item, groupLabel){
   return el;
 }
 
+/* ---- Commission Rate Schedule editor (per production year) ---- */
 function renderPrufinYearTabs(){
   const mount = document.getElementById('prufin-year-tabs');
   if(!mount) return;
@@ -2073,12 +2144,10 @@ function renderPrufinYearTabs(){
     <button class="prufin-year-tab ${y === prufinActiveYear ? 'active' : ''}" onclick="selectPrufinYear(${y})">${y}${y === 2026 ? ' •' : ''}</button>
   `).join('');
 }
-
 async function selectPrufinYear(year){
   prufinActiveYear = year;
   await renderPrufinRateEditor();
 }
-
 async function onPrufinPlanSelect(){
   const select = document.getElementById('prufin-plan-select');
   if(!select) return;
@@ -2099,7 +2168,6 @@ async function onPrufinPlanSelect(){
   prufinActivePlanKey = select.value;
   await renderPrufinRateEditor();
 }
-
 async function renderPrufinRateEditor(){
   const mount = document.getElementById('prufin-rate-editor');
   if(!mount) return;
@@ -2143,7 +2211,6 @@ async function renderPrufinRateEditor(){
     <div class="save-note" id="prufin-rate-savenote"></div>
   `;
 }
-
 async function savePrufinRates(kind){
   const overrides = await getEntries('prufin-rate-overrides');
   const idx = overrides.findIndex(o => o.year === prufinActiveYear && o.key === prufinActivePlanKey);
@@ -2163,85 +2230,95 @@ async function savePrufinRates(kind){
   const note = document.getElementById('prufin-rate-savenote');
   if(note) note.textContent = ok ? 'Saved.' : 'Could not save — please try again.';
   await renderPrufinRateEditor();
-  await renderPrufinPanel();
+  await renderPrufinEstimateSection();
+  await renderPrufinActualSection();
 }
-
 async function resetPrufinRates(){
   const overrides = await getEntries('prufin-rate-overrides');
   const filtered = overrides.filter(o => !(o.year === prufinActiveYear && o.key === prufinActivePlanKey));
   await saveEntries('prufin-rate-overrides', filtered);
   await renderPrufinRateEditor();
-  await renderPrufinPanel();
+  await renderPrufinEstimateSection();
+  await renderPrufinActualSection();
 }
 
-function prufinMonthlyTableHtml(title, gross, net, subtitle, batchKey){
-  const totalGross = gross.reduce((a, b) => a + b, 0);
-  const totalNet = net.reduce((a, b) => a + b, 0);
+/* ---- Shared year + Own/Adopted/All controls for Estimated & Actual ---- */
+function renderPrufinControls(){
+  const mount = document.getElementById('prufin-controls');
+  if(!mount) return;
+  mount.innerHTML = `
+    <div class="prufin-controls-row">
+      <label class="prufin-controls-label">Year
+        <select id="prufin-view-year-select" onchange="onPrufinViewYearChange()">
+          ${PRUFIN_RATE_YEARS.map(y => `<option value="${y}" ${y === prufinViewYear ? 'selected' : ''}>${y}</option>`).join('')}
+        </select>
+      </label>
+      <div class="prufin-year-tabs" style="margin:0;">
+        <button class="prufin-year-tab ${prufinClientFilter === 'all' ? 'active' : ''}" onclick="setPrufinFilter('all')">All</button>
+        <button class="prufin-year-tab ${prufinClientFilter === 'own' ? 'active' : ''}" onclick="setPrufinFilter('own')">Own</button>
+        <button class="prufin-year-tab ${prufinClientFilter === 'adopted' ? 'active' : ''}" onclick="setPrufinFilter('adopted')">Adopted</button>
+      </div>
+    </div>
+  `;
+}
+async function onPrufinViewYearChange(){
+  const select = document.getElementById('prufin-view-year-select');
+  if(select) prufinViewYear = Number(select.value);
+  await renderPrufinEstimateSection();
+  await renderPrufinActualSection();
+}
+async function setPrufinFilter(filter){
+  prufinClientFilter = filter;
+  renderPrufinControls();
+  await renderPrufinEstimateSection();
+  await renderPrufinActualSection();
+}
+
+/* ---- Estimated Monthly Commissions ---- */
+function prufinMonthlyTableHtml(title, gross, net, subtitle, batchKey, visibleIdx){
+  const idxList = visibleIdx || MONTHS.map((_, i) => i);
+  const totalGross = idxList.reduce((a, i) => a + gross[i], 0);
+  const totalNet = idxList.reduce((a, i) => a + net[i], 0);
   const clickable = batchKey != null;
   return `
-    <div class="rewards-section">
-      <h2 class="${clickable ? 'prufin-clickable-title' : ''}" ${clickable ? `onclick="openPrufinBatchModal('${batchKey}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') openPrufinBatchModal('${batchKey}')"` : ''}>
+    <div class="rewards-subsection">
+      <h3 class="${clickable ? 'prufin-clickable-title' : ''}" ${clickable ? `onclick="openPrufinBatchModal('${batchKey}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') openPrufinBatchModal('${batchKey}')"` : ''}>
         ${escapeHtml(title)}${clickable ? ' <span class="prufin-view-clients">View clients →</span>' : ''}
-      </h2>
+      </h3>
       ${subtitle ? `<div class="rs-sub">${subtitle}</div>` : ''}
       <div class="statistics-table-wrap">
         <table class="statistics-table">
-          <thead><tr><th style="text-align:left;">2026</th>${MONTHS.map(m => `<th>${m.slice(0,3)}</th>`).join('')}<th>Total</th></tr></thead>
+          <thead><tr><th style="text-align:left;">${prufinViewYear}</th>${idxList.map(i => `<th>${MONTHS[i].slice(0,3)}</th>`).join('')}<th>Total</th></tr></thead>
           <tbody>
-            <tr><td style="text-align:left;">Gross PRUFIN</td>${gross.map(v => `<td class="num">${fmtCurrency(v)}</td>`).join('')}<td class="num">${fmtCurrency(totalGross)}</td></tr>
-            <tr><td style="text-align:left;">Net PRUFIN (less 3% tax)</td>${net.map(v => `<td class="num">${fmtCurrency(v)}</td>`).join('')}<td class="num">${fmtCurrency(totalNet)}</td></tr>
+            <tr><td style="text-align:left;">Gross PRUFIN</td>${idxList.map(i => `<td class="num">${fmtCurrency(gross[i])}</td>`).join('')}<td class="num">${fmtCurrency(totalGross)}</td></tr>
+            <tr><td style="text-align:left;">Net PRUFIN (less 3% tax)</td>${idxList.map(i => `<td class="num">${fmtCurrency(net[i])}</td>`).join('')}<td class="num">${fmtCurrency(totalNet)}</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   `;
 }
-
-function prufinBarChartHtml(years){
-  if(!prufinLastEstimate || !years.length) return '';
-  const rows = [];
-  years.forEach(y => {
-    const b = prufinLastEstimate.batches[y];
-    const label = `${PRUFIN_ORDINALS[y - 1] || y + 'th'} Year`;
-    rows.push({ label: label + ' · Gross', value: b.gross.reduce((a, c) => a + c, 0), cls: '' });
-    rows.push({ label: label + ' · Net', value: b.net.reduce((a, c) => a + c, 0), cls: 'net' });
-  });
-  const maximum = Math.max(...rows.map(r => r.value), 1);
-  return `
-    <div class="rewards-section">
-      <h2>Yearly Comparison — Gross vs Net</h2>
-      <div class="rs-sub">Total 2026 commission per policy-year batch, gross vs. after the 3% tax.</div>
-      <div class="statistics-chart-card">
-        <div class="statistics-bar-list">
-          ${rows.map(r => `
-            <div class="statistics-bar-row">
-              <div class="statistics-bar-label">${escapeHtml(r.label)}</div>
-              <div class="statistics-bar-track"><div class="statistics-bar-fill ${r.cls}" style="width:${(r.value / maximum) * 100}%"></div></div>
-              <div class="statistics-bar-value">${fmtCurrency(r.value)}</div>
-            </div>`).join('')}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-async function renderPrufinPanel(){
-  await renderPrufinRateEditor();
+async function renderPrufinEstimateSection(){
+  renderPrufinControls();
   const mount = document.getElementById('prufin-mount');
   if(!mount) return; // panel not built yet
   const clients = await getEntries('pru-clients');
   const overrides = await getEntries('prufin-rate-overrides');
-  const est = computePrufinEstimate(clients, overrides);
+  const est = computePrufinEstimate(clients, overrides, prufinViewYear, prufinClientFilter);
   prufinLastEstimate = est;
+  const visibleIdx = prufinVisibleMonthIndexes(prufinViewYear);
+
+  if(!visibleIdx.length){
+    mount.innerHTML = `<div class="rs-sub">No commissions before August 2022 — pick a later year.</div>`;
+    return;
+  }
 
   const overallHtml = prufinMonthlyTableHtml(
-    'Estimated 2026 Monthly Commissions — All Years Combined',
+    `Estimated ${prufinViewYear} Monthly Commissions — All Years Combined`,
     est.overallGross, est.overallNet,
     'Sum of every policy-year batch below. Estimates only, based on scheduled premium due dates.',
-    'all'
+    'all', visibleIdx
   );
-
-  const chartHtml = prufinBarChartHtml(est.years);
 
   const batchHtml = est.years.length
     ? est.years.map(y => prufinMonthlyTableHtml(
@@ -2250,13 +2327,13 @@ async function renderPrufinPanel(){
         y === 1
           ? 'Clients within their first 12 months on the books.'
           : `Clients now in year ${y} of their policy — issue dates don't line up, so each client lands in the month their own anniversary payment falls due.`,
-        String(y)
+        String(y), visibleIdx
       )).join('')
-    : `<div class="rewards-section"><div class="rs-sub">No Issued clients with a computable premium and rate were found yet.</div></div>`;
+    : `<div class="rs-sub">No Issued clients with a computable premium and rate were found for ${prufinViewYear} yet.</div>`;
 
   const warningsHtml = est.warnings.length
-    ? `<div class="rewards-section">
-        <h2>Needs a Closer Look</h2>
+    ? `<div class="rewards-subsection">
+        <h3>Needs a Closer Look</h3>
         <div class="rs-sub">These Issued clients were left out of the estimate above — fill in the missing field or add a rate to include them.</div>
         <div class="statistics-table-wrap"><table class="statistics-table">
           <thead><tr><th style="text-align:left;">Client</th><th style="text-align:left;">Why it's excluded</th></tr></thead>
@@ -2265,7 +2342,7 @@ async function renderPrufinPanel(){
       </div>`
     : '';
 
-  mount.innerHTML = overallHtml + chartHtml + batchHtml + warningsHtml;
+  mount.innerHTML = overallHtml + batchHtml + warningsHtml;
 }
 
 function openPrufinBatchModal(batchKey){
@@ -2288,7 +2365,7 @@ function openPrufinBatchModal(batchKey){
   }
 
   document.getElementById('prufin-modal-title').textContent = title;
-  document.getElementById('prufin-modal-sub').textContent = `${rows.length} client${rows.length === 1 ? '' : 's'} contributing to this batch in 2026.`;
+  document.getElementById('prufin-modal-sub').textContent = `${rows.length} client${rows.length === 1 ? '' : 's'} contributing to this batch in ${prufinViewYear}.`;
   list.innerHTML = rows.length
     ? `<table class="client-fyp-table">
         <thead><tr><th>Client</th><th>Plan</th><th>Mode</th>${batchKey === 'all' ? '<th>Yr</th>' : ''}<th>Months Paid</th><th>Rate</th><th>Gross</th><th>Net</th></tr></thead>
@@ -2310,6 +2387,214 @@ function openPrufinBatchModal(batchKey){
 function closePrufinModal(){
   const modal = document.getElementById('prufin-modal');
   if(modal) modal.classList.remove('open');
+}
+
+/* ---- Actual Commissions — Payment Tracker ---- */
+async function togglePrufinPaid(clientKey, monthIndex, year, checked){
+  const tracker = await getEntries('prufin-payment-tracker');
+  const idx = tracker.findIndex(t => t.clientKey === clientKey && t.monthIndex === monthIndex && t.year === year);
+  if(checked && idx < 0) tracker.push({ clientKey, monthIndex, year });
+  if(!checked && idx >= 0) tracker.splice(idx, 1);
+  await saveEntries('prufin-payment-tracker', tracker);
+  await renderPrufinActualSection();
+}
+async function renderPrufinActualSection(){
+  const mount = document.getElementById('prufin-actual-mount');
+  if(!mount) return;
+  const est = prufinLastEstimate && prufinLastEstimate.targetYear === prufinViewYear && prufinLastEstimate.filter === prufinClientFilter
+    ? prufinLastEstimate
+    : null;
+  if(!est){ mount.innerHTML = ''; return; } // estimate section renders first and populates this
+  const visibleIdx = prufinVisibleMonthIndexes(prufinViewYear);
+  if(!visibleIdx.length){
+    mount.innerHTML = `<div class="rs-sub">No commissions before August 2022 — pick a later year.</div>`;
+    return;
+  }
+  const tracker = await getEntries('prufin-payment-tracker');
+  const paidSet = new Set(tracker.filter(t => t.year === prufinViewYear).map(t => t.clientKey + '|' + t.monthIndex));
+
+  let actualGross = 0, actualNet = 0, estGross = 0, estNet = 0;
+  const byMonth = {}; // monthIndex -> rows[]
+  est.paymentsFlat.forEach(p => {
+    estGross += p.gross; estNet += p.net;
+    const paid = paidSet.has(p.clientKey + '|' + p.monthIndex);
+    if(paid){ actualGross += p.gross; actualNet += p.net; }
+    if(!byMonth[p.monthIndex]) byMonth[p.monthIndex] = [];
+    byMonth[p.monthIndex].push({ ...p, paid });
+  });
+
+  const collectionRate = estGross ? (actualGross / estGross) * 100 : 0;
+  const summaryHtml = `
+    <div class="statistics-grid" style="margin-bottom:16px;">
+      <div class="statistics-card"><h3>Estimated</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(estGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(estNet)}</div></div></div></div>
+      <div class="statistics-card"><h3>Actual (Paid)</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(actualGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(actualNet)}</div></div></div></div>
+      <div class="statistics-card"><h3>Collected</h3><div class="statistics-values"><div><div class="statistics-label">% of Estimated Gross</div><div class="statistics-value">${collectionRate.toFixed(1)}%</div></div></div></div>
+    </div>
+  `;
+
+  const monthGroups = visibleIdx.filter(i => byMonth[i] && byMonth[i].length).map(i => {
+    const rows = byMonth[i].sort((a, b) => a.name.localeCompare(b.name));
+    return `
+      <div class="rewards-subsection">
+        <h3>${MONTHS[i]} ${prufinViewYear}</h3>
+        <div class="statistics-table-wrap">
+          <table class="statistics-table">
+            <thead><tr><th style="text-align:left;">Client</th><th style="text-align:left;">Plan</th><th>Rate</th><th>Gross</th><th>Net</th><th>Paid?</th></tr></thead>
+            <tbody>${rows.map(r => `
+              <tr>
+                <td style="text-align:left;">${escapeHtml(r.name)}</td>
+                <td style="text-align:left;">${escapeHtml(r.plan)}</td>
+                <td class="num">${prufinPct(r.rate)}</td>
+                <td class="num">${fmtCurrency(r.gross)}</td>
+                <td class="num">${fmtCurrency(r.net)}</td>
+                <td class="num"><input type="checkbox" ${r.paid ? 'checked' : ''} onchange="togglePrufinPaid('${prufinJsStr(r.clientKey)}', ${r.monthIndex}, ${prufinViewYear}, this.checked)"></td>
+              </tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  mount.innerHTML = summaryHtml + (monthGroups || `<div class="rs-sub">No expected payments for ${prufinViewYear} yet.</div>`);
+}
+
+async function renderPrufinPanel(){
+  await renderPrufinRateEditor();
+  await renderPrufinEstimateSection();
+  await renderPrufinActualSection();
+}
+
+/* ==================== Prufin Statistics (separate page) ==================== */
+let prufinStatsOpen = false;
+let prufinStatsYear = 2026;
+let prufinStatsFilter = 'all';
+const prufinStatisticsMount = document.getElementById('prufin-statistics-mount');
+
+function prufinBarRows(rows, labelKey, valueKey, formatter){
+  if(!rows.length) return '<div class="statistics-empty">No data to chart.</div>';
+  const maximum = Math.max(...rows.map(r => Math.abs(r[valueKey])), 1);
+  return `<div class="statistics-bar-list">${rows.map(r => `
+    <div class="statistics-bar-row">
+      <div class="statistics-bar-label">${escapeHtml(r[labelKey])}</div>
+      <div class="statistics-bar-track"><div class="statistics-bar-fill ${r.cls || ''}" style="width:${(Math.abs(r[valueKey]) / maximum) * 100}%"></div></div>
+      <div class="statistics-bar-value">${formatter(r[valueKey])}</div>
+    </div>`).join('')}</div>`;
+}
+
+async function openPrufinStatistics(){
+  prufinStatsOpen = true;
+  prufinStatsYear = prufinViewYear;
+  prufinStatsFilter = prufinClientFilter;
+  saveViewState();
+  renderView();
+  await renderPrufinStatisticsPanel();
+}
+function closePrufinStatistics(){
+  prufinStatsOpen = false;
+  saveViewState();
+  renderView();
+}
+async function onPrufinStatsYearChange(){
+  const select = document.getElementById('prufin-stats-year-select');
+  if(select) prufinStatsYear = Number(select.value);
+  await renderPrufinStatisticsPanel();
+}
+async function setPrufinStatsFilter(filter){
+  prufinStatsFilter = filter;
+  await renderPrufinStatisticsPanel();
+}
+
+async function renderPrufinStatisticsPanel(){
+  if(!prufinStatisticsMount) return;
+  const clients = await getEntries('pru-clients');
+  const overrides = await getEntries('prufin-rate-overrides');
+  const tracker = await getEntries('prufin-payment-tracker');
+
+  const est = computePrufinEstimate(clients, overrides, prufinStatsYear, prufinStatsFilter);
+  const visibleIdx = prufinVisibleMonthIndexes(prufinStatsYear);
+  const paidSet = new Set(tracker.filter(t => t.year === prufinStatsYear).map(t => t.clientKey + '|' + t.monthIndex));
+
+  let actualGross = 0, actualNet = 0, ownGross = 0, adoptedGross = 0;
+  const actualByMonth = Array(12).fill(0);
+  est.paymentsFlat.forEach(p => {
+    if(paidSet.has(p.clientKey + '|' + p.monthIndex)){
+      actualGross += p.gross; actualNet += p.net;
+      actualByMonth[p.monthIndex] += p.gross;
+    }
+    if((p.clientType || 'Own') === 'Own') ownGross += p.gross; else adoptedGross += p.gross;
+  });
+  const estGross = est.overallGross.reduce((a, b) => a + b, 0);
+  const estNet = est.overallNet.reduce((a, b) => a + b, 0);
+  const collectionRate = estGross ? (actualGross / estGross) * 100 : 0;
+
+  const batchRows = [];
+  est.years.forEach(y => {
+    const label = `${PRUFIN_ORDINALS[y - 1] || y + 'th'} Year`;
+    batchRows.push({ label: label + ' · Gross', value: est.batches[y].gross.reduce((a, c) => a + c, 0), cls: '' });
+    batchRows.push({ label: label + ' · Net', value: est.batches[y].net.reduce((a, c) => a + c, 0), cls: 'net' });
+  });
+
+  const monthCompareRows = visibleIdx.flatMap(i => ([
+    { label: `${MONTHS[i].slice(0,3)} · Estimated`, value: est.overallGross[i], cls: '' },
+    { label: `${MONTHS[i].slice(0,3)} · Actual`, value: actualByMonth[i], cls: 'net' },
+  ]));
+
+  const combinedOwnAdopted = ownGross + adoptedGross;
+  const ownShare = combinedOwnAdopted ? (ownGross / combinedOwnAdopted) * 360 : 0;
+
+  // All-years overview (2022–2030) for the current filter
+  const yearlyOverview = [];
+  for(const y of PRUFIN_RATE_YEARS){
+    const yEst = computePrufinEstimate(clients, overrides, y, prufinStatsFilter);
+    const yGross = yEst.overallGross.reduce((a, b) => a + b, 0);
+    const yNet = yEst.overallNet.reduce((a, b) => a + b, 0);
+    const yPaid = new Set(tracker.filter(t => t.year === y).map(t => t.clientKey + '|' + t.monthIndex));
+    let yActual = 0;
+    yEst.paymentsFlat.forEach(p => { if(yPaid.has(p.clientKey + '|' + p.monthIndex)) yActual += p.gross; });
+    yearlyOverview.push({ year: y, gross: yGross, net: yNet, actual: yActual });
+  }
+
+  prufinStatisticsMount.innerHTML = `
+    <button class="statistics-back" onclick="closePrufinStatistics()">← Back to PRUFINATED</button>
+    <h1>Prufin Statistics</h1>
+    <div class="sub">Commission production, collection rate, and Own vs. Adopted performance.</div>
+    <div class="prufin-controls-row" style="justify-content:center; margin-bottom:18px;">
+      <label class="prufin-controls-label">Year
+        <select id="prufin-stats-year-select" onchange="onPrufinStatsYearChange()">
+          ${PRUFIN_RATE_YEARS.map(y => `<option value="${y}" ${y === prufinStatsYear ? 'selected' : ''}>${y}</option>`).join('')}
+        </select>
+      </label>
+      <div class="prufin-year-tabs" style="margin:0;">
+        <button class="prufin-year-tab ${prufinStatsFilter === 'all' ? 'active' : ''}" onclick="setPrufinStatsFilter('all')">All</button>
+        <button class="prufin-year-tab ${prufinStatsFilter === 'own' ? 'active' : ''}" onclick="setPrufinStatsFilter('own')">Own</button>
+        <button class="prufin-year-tab ${prufinStatsFilter === 'adopted' ? 'active' : ''}" onclick="setPrufinStatsFilter('adopted')">Adopted</button>
+      </div>
+    </div>
+
+    <div class="statistics-grid">
+      <div class="statistics-card"><h3>Estimated ${prufinStatsYear}</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(estGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(estNet)}</div></div></div></div>
+      <div class="statistics-card"><h3>Actual ${prufinStatsYear}</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(actualGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(actualNet)}</div></div></div></div>
+      <div class="statistics-card"><h3>Collected</h3><div class="statistics-values"><div><div class="statistics-label">% of Estimated Gross</div><div class="statistics-value">${collectionRate.toFixed(1)}%</div></div></div></div>
+    </div>
+
+    <h2>Yearly Comparison — Gross vs Net (${prufinStatsYear})</h2>
+    <div class="stats-sub">Total commission per policy-year batch, gross vs. after the 3% tax.</div>
+    <div class="statistics-chart-card">${prufinBarRows(batchRows, 'label', 'value', fmtCurrency)}</div>
+
+    <h2>Estimated vs Actual by Month (${prufinStatsYear})</h2>
+    <div class="stats-sub">How much of each month's estimate has actually been marked paid.</div>
+    <div class="statistics-chart-card">${prufinBarRows(monthCompareRows, 'label', 'value', fmtCurrency)}</div>
+
+    <h2>Own vs Adopted</h2>
+    <div class="stats-sub">Share of estimated ${prufinStatsYear} gross commission.</div>
+    <div class="statistics-chart-grid">
+      <div class="statistics-chart-card"><h3>Gross Commission by Client Type</h3><div class="statistics-pie" style="background:conic-gradient(var(--brass) 0deg ${ownShare}deg, var(--navy) ${ownShare}deg 360deg);"></div><div class="statistics-legend"><span><i class="statistics-swatch" style="background:var(--brass)"></i>Own ${combinedOwnAdopted ? ((ownGross / combinedOwnAdopted) * 100).toFixed(1) : '0.0'}%</span><span><i class="statistics-swatch" style="background:var(--navy)"></i>Adopted ${combinedOwnAdopted ? ((adoptedGross / combinedOwnAdopted) * 100).toFixed(1) : '0.0'}%</span></div></div>
+    </div>
+
+    <h2>Commissions by Year — 2022 to 2030</h2>
+    <div class="stats-sub">Estimated vs. Actual gross commission per calendar year, for the current Own/Adopted/All filter.</div>
+    <div class="statistics-table-wrap"><table class="statistics-table"><thead><tr><th>Year</th><th>Estimated Gross</th><th>Estimated Net</th><th>Actual Gross</th><th>Collected %</th></tr></thead><tbody>${yearlyOverview.map(row => `<tr><td>${row.year}</td><td class="num">${fmtCurrency(row.gross)}</td><td class="num">${fmtCurrency(row.net)}</td><td class="num">${fmtCurrency(row.actual)}</td><td class="num">${row.gross ? ((row.actual / row.gross) * 100).toFixed(1) : '0.0'}%</td></tr>`).join('')}</tbody></table></div>
+  `;
 }
 
 async function openRewardBreakdown(kind, key){
@@ -2542,6 +2827,16 @@ function closeStatistics(){
 
 /* ---------- view switching ---------- */
 function renderView(){
+  if(prufinStatsOpen){
+    boxGrid.style.display = 'none';
+    document.getElementById('group-title').style.display = 'none';
+    document.getElementById('group-sub').style.display = 'none';
+    document.querySelectorAll('.leaf-view').forEach(p => p.classList.remove('visible'));
+    statisticsMount.classList.remove('visible');
+    if(prufinStatisticsMount) prufinStatisticsMount.classList.add('visible');
+    return;
+  }
+  if(prufinStatisticsMount) prufinStatisticsMount.classList.remove('visible');
   if(statisticsOpen){
     boxGrid.style.display = 'none';
     document.getElementById('group-title').style.display = 'none';
@@ -3050,7 +3345,7 @@ async function renderTable(id){
   if(entries.length === 0){
     listEl.innerHTML = `<div class="empty">No entries yet — add your first client above.</div>`;
     await renderGroupCount(idToGroup(id));
-    if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); }
+    if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); if(prufinStatsOpen) await renderPrufinStatisticsPanel(); }
     return;
   }
 
@@ -3121,7 +3416,7 @@ async function renderTable(id){
     </div>
   `;
   await renderGroupCount(idToGroup(id));
-  if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); }
+  if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); if(prufinStatsOpen) await renderPrufinStatisticsPanel(); }
 }
 
 function idToGroup(leafId){
@@ -3170,6 +3465,7 @@ async function refreshAfterClientChange(id){
   if(id === 'pru-clients'){
     await renderRewardsPanel();
     await renderPrufinPanel();
+    if(prufinStatsOpen) await renderPrufinStatisticsPanel();
   }
 }
 
@@ -3512,6 +3808,7 @@ window.initApp = async function initApp(){
   await renderRewardsPanel();
   await renderPrufinPanel();
   if(statisticsOpen) await renderStatisticsPanel();
+  if(prufinStatsOpen) await renderPrufinStatisticsPanel();
 };
 </script>
 
