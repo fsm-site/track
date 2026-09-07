@@ -824,6 +824,7 @@
      and this rule must not override that or the dashboard bleeds
      through the login screen while logged out.) */
   #app-shell{display:block; width:100%;}
+  #app-shell.hidden{display:none;}
   .sidebar{
     position:sticky;
     top:0;
@@ -976,7 +977,7 @@
   </div>
 </div>
 
-<div id="app-shell" style="display:flex; width:100%;">
+<div id="app-shell" class="hidden" style="width:100%;">
   <div class="sidebar" style="display:flex; flex-direction:column;">
     <div class="brand">Bam<span>Personal dashboard</span></div>
     <div class="today-badge" id="today-badge"></div>
@@ -1110,7 +1111,7 @@
     authLoading.style.display = 'none';
     if(user){
       loginScreen.style.display = 'none';
-      appShell.style.display = 'flex';
+      appShell.classList.remove('hidden');
       const userLabel = document.getElementById('sidebar-user');
       if(userLabel) userLabel.textContent = user.email || '';
       if(!hasInitedApp){
@@ -1118,7 +1119,7 @@
         if(window.initApp) window.initApp();
       }
     }else{
-      appShell.style.display = 'none';
+      appShell.classList.add('hidden');
       loginScreen.style.display = 'flex';
       passwordEl.value = '';
     }
