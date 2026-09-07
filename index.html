@@ -818,8 +818,12 @@
   *{font-family:'Montserrat',sans-serif;}
   strong,.box-count,.tb-value,.achv-pct,.achv-name,.value,td.num,.status-pill,.nav-item.active{font-weight:700;}
   h1,h2,h3,.box-label,.brand{font-family:'Montserrat',sans-serif;}
-  /* Use the former sidebar as a space-saving top navigation bar. */
-  #app-shell{display:block !important; width:100%;}
+  /* Use the former sidebar as a space-saving top navigation bar.
+     (No !important here — the auth gate in the script below sets
+     #app-shell's inline display to none/flex based on sign-in state,
+     and this rule must not override that or the dashboard bleeds
+     through the login screen while logged out.) */
+  #app-shell{display:block; width:100%;}
   .sidebar{
     position:sticky;
     top:0;
