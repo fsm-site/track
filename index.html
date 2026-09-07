@@ -719,21 +719,21 @@
     word-break:break-all;
   }
 
-  /* refreshed interface */
+  /* refreshed interface — ocean-blue palette, inspired by the blue swatch card reference */
   :root{
-    --navy:#172331;
-    --navy-soft:#263746;
-    --ivory:#f6f7f4;
-    --ink:#24313b;
-    --ink-soft:#75818a;
-    --brass:#d35f3f;
-    --brass-soft:#f7ddd1;
-    --line:#dfe5e2;
-    --red:#b94b40;
-    --stripe:#eaf0ed;
-    --brass-dark:#ae4932;
+    --navy:#123049;
+    --navy-soft:#1E4560;
+    --ivory:#F4F8FB;
+    --ink:#1D2B36;
+    --ink-soft:#6B808C;
+    --brass:#2E6E93;
+    --brass-soft:#DCEAF3;
+    --line:#D7E4EC;
+    --red:#C0392B;
+    --stripe:#EAF3F8;
+    --brass-dark:#1F4F6D;
     --mint:#dceee4;
-    --shadow:0 18px 45px rgba(23,35,49,.08);
+    --shadow:0 18px 45px rgba(18,48,73,.14);
   }
   body{
     background:radial-gradient(circle at 92% -10%, #fff 0, transparent 34%), var(--ivory);
@@ -769,13 +769,36 @@
   h1{font-size:31px; letter-spacing:-.9px; color:var(--navy);}
   .sub{font-size:13px; margin-bottom:30px; color:var(--ink-soft);}
   .box-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px;}
-  .box{min-height:190px; position:relative; justify-content:center; align-items:center; text-align:center; border:1px solid var(--line); border-radius:14px; padding:28px 34px; box-shadow:0 5px 16px rgba(23,35,49,.025);}
-  .box:hover{border-color:var(--brass); transform:translateY(-3px); box-shadow:var(--shadow);}
-  .box .box-top{width:100%; justify-content:center; align-items:center;}
-  .box .box-count{color:var(--navy); font-size:36px; line-height:1;}
-  .box .box-count-label{color:var(--ink-soft);}
-  .box .box-label{font-size:19px; color:var(--navy); line-height:1.35;}
-  .box .box-arrow{position:absolute; top:18px; right:20px; color:var(--brass); font-size:23px;}
+  .box{min-height:190px; position:relative; padding:0; border:none; border-radius:8px; overflow:visible; box-shadow:0 8px 22px rgba(18,48,73,.1); background:transparent;}
+  .box:hover{border-color:transparent; transform:translateY(-4px); box-shadow:0 16px 32px rgba(18,48,73,.18);}
+  .box .box-top{display:none;}
+  .box-swatch-label{
+    position:relative;
+    z-index:1;
+    background:#fff;
+    color:var(--navy);
+    font-size:14.5px;
+    font-weight:800;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    text-align:center;
+    line-height:1.35;
+    padding:18px 20px 22px;
+    clip-path:polygon(0% 0%,100% 0%,100% 76%,96% 100%,92% 76%,88% 100%,84% 76%,80% 100%,76% 76%,72% 100%,68% 76%,64% 100%,60% 76%,56% 100%,52% 76%,48% 100%,44% 76%,40% 100%,36% 76%,32% 100%,28% 76%,24% 100%,20% 76%,16% 100%,12% 76%,8% 100%,4% 76%,0% 100%);
+  }
+  .box-swatch-body{
+    margin-top:-1px;
+    background:var(--brass);
+    min-height:78px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:0 0 8px 8px;
+    transition:background .15s ease;
+  }
+  .box:hover .box-swatch-body{background:var(--brass-dark);}
+  .box .box-arrow{font-size:24px; color:#fff;}
+  .box .box-label{display:none;}
   .leaf-view.visible{animation:fade .24s ease;}
   .back-link{color:var(--ink-soft); margin-bottom:18px;}
   .back-link:hover{color:var(--brass);}
@@ -902,7 +925,7 @@
   .prufin-rate-editor-head select{width:auto; min-width:220px;}
   .prufin-badge{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding:3px 9px; border-radius:999px;}
   .prufin-badge.default{background:var(--brass-soft); color:var(--brass-dark);}
-  .prufin-badge.custom{background:#e4eee7; color:#2f6b4f;}
+  .prufin-badge.custom{background:var(--navy-soft); color:#fff;}
   .prufin-badge.unset{background:var(--stripe); color:var(--ink-soft);}
   .prufin-rate-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-top:10px;}
   .prufin-rate-grid.one-time{grid-template-columns:1fr;}
@@ -922,11 +945,11 @@
   .rewards-subsection h3{margin:0 0 4px; color:var(--navy); font-size:14.5px;}
   .prufin-section-title{font-size:22px !important; font-weight:800; padding:10px 16px; border-radius:12px; display:inline-block; margin-bottom:4px !important;}
   .prufin-section-title.estimate{background:var(--brass-soft); color:var(--brass-dark);}
-  .prufin-section-title.actual{background:#e4eee7; color:#2f6b4f;}
+  .prufin-section-title.actual{background:var(--navy); color:#fff;}
   .prufin-summary-card.estimate{border-color:var(--brass); box-shadow:0 0 0 1px var(--brass) inset;}
   .prufin-summary-card.estimate h3{color:var(--brass-dark); font-size:16px;}
-  .prufin-summary-card.actual{border-color:#2f6b4f; box-shadow:0 0 0 1px #2f6b4f inset;}
-  .prufin-summary-card.actual h3{color:#2f6b4f; font-size:16px;}
+  .prufin-summary-card.actual{border-color:var(--navy); box-shadow:0 0 0 1px var(--navy) inset;}
+  .prufin-summary-card.actual h3{color:var(--navy); font-size:16px;}
   .prufin-client-link{color:var(--navy); font-weight:700; text-decoration:none; cursor:pointer;}
   .prufin-client-link:hover{color:var(--brass); text-decoration:underline;}
   .prufin-tracker-table td.prufin-na{color:var(--ink-soft); opacity:.5;}
@@ -1347,6 +1370,10 @@ function computePrufinEstimate(clients, overrides, targetYear, filter){
         return;
       }
       const issuedYear = issuedDate.getFullYear();
+      if(issuedYear <= PRUFIN_RATE_YEARS[0] - 1){
+        warnings.push({ name, reason: `No commission rates provided for ${PRUFIN_RATE_YEARS[0] - 1} and below` });
+        return;
+      }
       const rateEntry = prufinRateEntryFor(overrides, issuedYear, key);
       if(!rateEntry){
         warnings.push({ name, reason: `No commission rate set for "${key}" in ${issuedYear} — add it in the schedule above` });
@@ -1611,18 +1638,14 @@ function renderBoxGrid(){
     if(item.url){
       return `
         <a class="box" href="${item.url}" target="_blank" rel="noopener noreferrer">
-          <div class="box-top">
-            <div class="box-arrow">↗</div>
-          </div>
-          <div class="box-label">${item.label}</div>
+          <div class="box-swatch-label">${item.label}</div>
+          <div class="box-swatch-body"><span class="box-arrow">↗</span></div>
         </a>`;
     }
     return `
       <button class="box" onclick="selectLeaf('${group.id}','${item.id}')">
-        <div class="box-top">
-          <div class="box-arrow">→</div>
-        </div>
-        <div class="box-label">${item.label}</div>
+        <div class="box-swatch-label">${item.label}</div>
+        <div class="box-swatch-body"><span class="box-arrow">→</span></div>
       </button>`;
   }).join('');
 }
@@ -2363,6 +2386,34 @@ async function renderPrufinEstimateSection(){
     </div>
   `;
 
+  const tracker = await getEntries('prufin-payment-tracker');
+  const paidSet = new Set(tracker.filter(t => t.year === prufinViewYear).map(t => t.clientKey + '|' + t.monthIndex));
+  const actualByMonth = Array(12).fill(0);
+  const actualNetByMonth = Array(12).fill(0);
+  est.paymentsFlat.forEach(p => {
+    if(paidSet.has(p.clientKey + '|' + p.monthIndex)){
+      actualByMonth[p.monthIndex] += p.gross;
+      actualNetByMonth[p.monthIndex] += p.net;
+    }
+  });
+  const totalActualGross = visibleIdx.reduce((a, i) => a + actualByMonth[i], 0);
+  const totalActualNet = visibleIdx.reduce((a, i) => a + actualNetByMonth[i], 0);
+  const compareHtml = `
+    <div class="rewards-subsection">
+      <h3>Estimated vs Actual, by Month</h3>
+      <div class="rs-sub">How much of each month's estimate has actually been marked paid in the tracker below.</div>
+      <div class="statistics-table-wrap">
+        <table class="statistics-table">
+          <thead><tr><th style="text-align:left;">${prufinViewYear}</th>${visibleIdx.map(i => `<th>${MONTHS[i].slice(0,3)}</th>`).join('')}<th>Total</th></tr></thead>
+          <tbody>
+            <tr><td style="text-align:left;">Estimated</td>${visibleIdx.map(i => `<td class="num">${prufinCell(est.overallGross[i], est.overallNet[i])}</td>`).join('')}<td class="num">${prufinCell(totalGrossAll, totalNetAll)}</td></tr>
+            <tr><td style="text-align:left;">Actual (Paid)</td>${visibleIdx.map(i => `<td class="num">${prufinCell(actualByMonth[i], actualNetByMonth[i])}</td>`).join('')}<td class="num">${prufinCell(totalActualGross, totalActualNet)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
   const warningsHtml = est.warnings.length
     ? `<div class="rewards-subsection">
         <h3>Needs a Closer Look</h3>
@@ -2374,7 +2425,7 @@ async function renderPrufinEstimateSection(){
       </div>`
     : '';
 
-  mount.innerHTML = tableHtml + warningsHtml;
+  mount.innerHTML = tableHtml + compareHtml + warningsHtml;
 }
 
 function openPrufinBatchModal(batchKey){
