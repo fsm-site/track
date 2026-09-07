@@ -926,6 +926,11 @@
   .prufin-client-link:hover{color:var(--brass); text-decoration:underline;}
   .prufin-tracker-table td.prufin-na{color:var(--ink-soft); opacity:.5;}
   .prufin-tracker-table th{white-space:nowrap;}
+  .prufin-clickable-row{cursor:pointer;}
+  .prufin-clickable-row:hover{background:var(--brass-soft);}
+  .prufin-cell-sub{font-size:10.5px; font-weight:500; color:var(--ink-soft); margin-top:2px;}
+  .prufin-total-row{font-weight:700; background:var(--stripe);}
+  .prufin-total-row:hover{background:var(--brass-soft);}
   .statistics-bar-value{color:var(--navy); font-weight:700; white-space:nowrap;}
   .statistics-assessment{margin-top:28px; padding:20px 24px; border:1px solid var(--brass); border-radius:14px; background:linear-gradient(135deg,#fff,var(--brass-soft) 220%); color:var(--navy);}
   .statistics-assessment h2{margin:0 0 8px; font-size:17px;}
@@ -2119,16 +2124,19 @@ function buildPrufinPanel(item, groupLabel){
     </div>
 
     <div class="rewards-section">
-      <h2 class="prufin-section-title estimate">💰 Estimated Monthly Commissions</h2>
       <div class="rs-sub">Commissions are only shown from August 2022 onwards, and Lapsed clients are always excluded.</div>
       <div id="prufin-controls"></div>
-      <div id="prufin-mount"></div>
     </div>
 
     <div class="rewards-section">
       <h2 class="prufin-section-title actual">✅ Actual Commissions — Payment Tracker</h2>
       <div class="rs-sub">Tick a month once the client's premium is actually paid. Actual totals below update automatically.</div>
       <div id="prufin-actual-mount"></div>
+    </div>
+
+    <div class="rewards-section">
+      <h2 class="prufin-section-title estimate">💰 Estimated Monthly Commissions</h2>
+      <div id="prufin-mount"></div>
     </div>
 
     <div class="client-fyp-modal" id="prufin-modal" role="dialog" aria-modal="true" aria-labelledby="prufin-modal-title">
@@ -2298,29 +2306,9 @@ async function setPrufinFilter(filter){
   await renderPrufinActualSection();
 }
 
-/* ---- Estimated Monthly Commissions ---- */
-function prufinMonthlyTableHtml(title, gross, net, subtitle, batchKey, visibleIdx){
-  const idxList = visibleIdx || MONTHS.map((_, i) => i);
-  const totalGross = idxList.reduce((a, i) => a + gross[i], 0);
-  const totalNet = idxList.reduce((a, i) => a + net[i], 0);
-  const clickable = batchKey != null;
-  return `
-    <div class="rewards-subsection">
-      <h3 class="${clickable ? 'prufin-clickable-title' : ''}" ${clickable ? `onclick="openPrufinBatchModal('${batchKey}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') openPrufinBatchModal('${batchKey}')"` : ''}>
-        ${escapeHtml(title)}${clickable ? ' <span class="prufin-view-clients">View clients →</span>' : ''}
-      </h3>
-      ${subtitle ? `<div class="rs-sub">${subtitle}</div>` : ''}
-      <div class="statistics-table-wrap">
-        <table class="statistics-table">
-          <thead><tr><th style="text-align:left;">${prufinViewYear}</th>${idxList.map(i => `<th>${MONTHS[i].slice(0,3)}</th>`).join('')}<th>Total</th></tr></thead>
-          <tbody>
-            <tr><td style="text-align:left;">Gross PRUFIN</td>${idxList.map(i => `<td class="num">${fmtCurrency(gross[i])}</td>`).join('')}<td class="num">${fmtCurrency(totalGross)}</td></tr>
-            <tr><td style="text-align:left;">Net PRUFIN (less 3% tax)</td>${idxList.map(i => `<td class="num">${fmtCurrency(net[i])}</td>`).join('')}<td class="num">${fmtCurrency(totalNet)}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
+/* ---- Estimated Monthly Commissions (one merged table, rows = policy year) ---- */
+function prufinCell(gross, net){
+  return `${fmtCurrency(gross)}<div class="prufin-cell-sub">net ${fmtCurrency(net)}</div>`;
 }
 async function renderPrufinEstimateSection(){
   renderPrufinControls();
@@ -2336,29 +2324,44 @@ async function renderPrufinEstimateSection(){
     mount.innerHTML = `<div class="rs-sub">No commissions before August 2022 — pick a later year.</div>`;
     return;
   }
+  if(!est.years.length){
+    mount.innerHTML = `<div class="rs-sub">No Issued clients with a computable premium and rate were found for ${prufinViewYear} yet.</div>`;
+    return;
+  }
 
-  const overallHtml = prufinMonthlyTableHtml(
-    `Estimated ${prufinViewYear} Monthly Commissions — All Years Combined`,
-    est.overallGross, est.overallNet,
-    'Sum of every policy-year batch below. Estimates only, based on scheduled premium due dates.',
-    'all', visibleIdx
-  );
+  const rows = est.years.map(y => {
+    const g = est.batches[y].gross, n = est.batches[y].net;
+    const totalGross = visibleIdx.reduce((a, i) => a + g[i], 0);
+    const totalNet = visibleIdx.reduce((a, i) => a + n[i], 0);
+    return `<tr class="prufin-clickable-row" onclick="openPrufinBatchModal('${y}')">
+      <td style="text-align:left;">${PRUFIN_ORDINALS[y - 1] || y + 'th'} Year <span class="prufin-view-clients">→</span></td>
+      ${visibleIdx.map(i => `<td class="num">${prufinCell(g[i], n[i])}</td>`).join('')}
+      <td class="num">${prufinCell(totalGross, totalNet)}</td>
+    </tr>`;
+  }).join('');
 
-  const batchHtml = est.years.length
-    ? est.years.map(y => prufinMonthlyTableHtml(
-        `${PRUFIN_ORDINALS[y - 1] || y + 'th'} Year Commissions`,
-        est.batches[y].gross, est.batches[y].net,
-        y === 1
-          ? 'Clients within their first 12 months on the books.'
-          : `Clients now in year ${y} of their policy — issue dates don't line up, so each client lands in the month their own anniversary payment falls due.`,
-        String(y), visibleIdx
-      )).join('')
-    : `<div class="rs-sub">No Issued clients with a computable premium and rate were found for ${prufinViewYear} yet.</div>`;
+  const totalGrossAll = visibleIdx.reduce((a, i) => a + est.overallGross[i], 0);
+  const totalNetAll = visibleIdx.reduce((a, i) => a + est.overallNet[i], 0);
+  const totalRow = `<tr class="prufin-clickable-row prufin-total-row" onclick="openPrufinBatchModal('all')">
+    <td style="text-align:left;">All Years Combined <span class="prufin-view-clients">→</span></td>
+    ${visibleIdx.map(i => `<td class="num">${prufinCell(est.overallGross[i], est.overallNet[i])}</td>`).join('')}
+    <td class="num">${prufinCell(totalGrossAll, totalNetAll)}</td>
+  </tr>`;
+
+  const tableHtml = `
+    <div class="rs-sub">Click any row to see which clients make it up. Each cell shows Gross, with Net (less 3% tax) below it.</div>
+    <div class="statistics-table-wrap">
+      <table class="statistics-table">
+        <thead><tr><th style="text-align:left;">${prufinViewYear}</th>${visibleIdx.map(i => `<th>${MONTHS[i].slice(0,3)}</th>`).join('')}<th>Total</th></tr></thead>
+        <tbody>${rows}${totalRow}</tbody>
+      </table>
+    </div>
+  `;
 
   const warningsHtml = est.warnings.length
     ? `<div class="rewards-subsection">
         <h3>Needs a Closer Look</h3>
-        <div class="rs-sub">These Issued clients were left out of the estimate above — fill in the missing field or add a rate to include them.</div>
+        <div class="rs-sub">These Issued clients were left out — fill in the missing field or add a rate to include them.</div>
         <div class="statistics-table-wrap"><table class="statistics-table">
           <thead><tr><th style="text-align:left;">Client</th><th style="text-align:left;">Why it's excluded</th></tr></thead>
           <tbody>${est.warnings.map(w => `<tr><td style="text-align:left;">${escapeHtml(w.name)}</td><td style="text-align:left;">${escapeHtml(w.reason)}</td></tr>`).join('')}</tbody>
@@ -2366,7 +2369,7 @@ async function renderPrufinEstimateSection(){
       </div>`
     : '';
 
-  mount.innerHTML = overallHtml + batchHtml + warningsHtml;
+  mount.innerHTML = tableHtml + warningsHtml;
 }
 
 function openPrufinBatchModal(batchKey){
