@@ -678,9 +678,14 @@
       var(--login-bg-image) center/cover no-repeat;
     background-color:var(--ivory);
   }
-  .login-box{
+  .login-card-wrap{
+    position:relative;
     width:100%;
     max-width:400px;
+    margin-top:64px;
+  }
+  .login-box{
+    width:100%;
     background:rgba(255,255,255,.88);
     backdrop-filter:blur(8px);
     -webkit-backdrop-filter:blur(8px);
@@ -688,26 +693,36 @@
     border-radius:28px;
     padding:38px 34px 32px;
     box-shadow:0 30px 70px rgba(18,48,73,.2);
+    animation:loginSwipeIn .7s cubic-bezier(.16,.84,.44,1) both;
   }
   .login-welcome{
+    position:absolute;
+    top:-64px;
+    left:50%;
     font-family:'Caveat', cursive;
     font-weight:700;
-    font-size:66px;
+    font-size:132px;
     line-height:1;
-    margin:0 0 2px;
-    display:inline-block;
+    white-space:nowrap;
+    pointer-events:none;
+    z-index:2;
     background-image:var(--login-bg-image);
-    background-size:440px 248px;
-    background-position:-30px -40px;
+    background-size:820px 462px;
+    background-position:-60px -70px;
     -webkit-background-clip:text;
     background-clip:text;
     color:transparent;
+    -webkit-text-fill-color:transparent;
+    animation:loginSwipeInWelcome .8s cubic-bezier(.16,.84,.44,1) both;
   }
-  .login-box .brand{
-    padding:0 0 22px 0;
-    color:var(--navy);
+  @keyframes loginSwipeIn{
+    from{ transform:translateX(-70px); opacity:0; }
+    to{ transform:translateX(0); opacity:1; }
   }
-  .login-box .brand span{ color:var(--ink-soft); }
+  @keyframes loginSwipeInWelcome{
+    from{ transform:translateX(calc(-50% - 70px)); opacity:0; }
+    to{ transform:translateX(-50%); opacity:1; }
+  }
   .login-box label{ margin-top:12px; }
   .login-box label:first-of-type{ margin-top:0; }
   .login-box input[type="email"], .login-box input[type="password"]{
@@ -739,7 +754,8 @@
         linear-gradient(180deg, rgba(244,248,251,.55) 0%, rgba(244,248,251,.92) 62%, rgba(244,248,251,.98) 100%),
         var(--login-bg-image) center 18%/cover no-repeat;
     }
-    .login-welcome{ font-size:54px; }
+    .login-card-wrap{ margin-top:48px; }
+    .login-welcome{ font-size:88px; top:-46px; background-size:560px 315px; background-position:-40px -50px; }
   }
   .signout-link{
     all:unset;
@@ -1029,18 +1045,19 @@
 <div id="auth-loading">Loading…</div>
 
 <div id="login-screen">
-  <div class="login-box">
+  <div class="login-card-wrap">
     <div class="login-welcome">Welcome</div>
-    <div class="brand">Bam<span>Personal dashboard</span></div>
-    <label for="login-email">Email</label>
-    <input id="login-email" type="email" autocomplete="username" placeholder="you@example.com">
-    <label for="login-password">Password</label>
-    <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••">
-    <label style="display:flex; align-items:center; gap:6px; font-weight:400; margin-top:6px; cursor:pointer;">
-      <input type="checkbox" id="login-show-pw" style="width:auto;"> Show password
-    </label>
-    <div class="login-error" id="login-error"></div>
-    <button class="primary" id="login-submit">Sign in</button>
+    <div class="login-box">
+      <label for="login-email">Email</label>
+      <input id="login-email" type="email" autocomplete="username" placeholder="you@example.com">
+      <label for="login-password">Password</label>
+      <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••">
+      <label style="display:flex; align-items:center; gap:6px; font-weight:400; margin-top:6px; cursor:pointer;">
+        <input type="checkbox" id="login-show-pw" style="width:auto;"> Show password
+      </label>
+      <div class="login-error" id="login-error"></div>
+      <button class="primary" id="login-submit">Sign in</button>
+    </div>
   </div>
 </div>
 
