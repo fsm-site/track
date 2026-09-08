@@ -671,8 +671,8 @@
     width:100%;
     display:none;
     align-items:center;
-    justify-content:center;
-    padding:48px 4vw;
+    justify-content:flex-start;
+    padding:48px 4vw 48px 8vw;
     background:
       linear-gradient(100deg, rgba(244,248,251,.95) 0%, rgba(244,248,251,.72) 30%, rgba(244,248,251,.18) 56%, rgba(244,248,251,0) 72%),
       var(--login-bg-image) center/cover no-repeat;
@@ -698,9 +698,13 @@
     position:static;
     font-family:'Caveat', cursive;
     font-weight:700;
-    font-size:198px;
+    display:block;
+    width:100%;
+    max-width:100%;
+    font-size:clamp(72px, 12vw, 150px);
     line-height:1;
     white-space:nowrap;
+    overflow:hidden;
     text-align:center;
     color:var(--navy);
     pointer-events:none;
