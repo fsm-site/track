@@ -671,8 +671,8 @@
     width:100%;
     display:none;
     align-items:center;
-    justify-content:flex-start;
-    padding:0 6vw;
+    justify-content:center;
+    padding:48px 4vw;
     background:
       linear-gradient(100deg, rgba(244,248,251,.95) 0%, rgba(244,248,251,.72) 30%, rgba(244,248,251,.18) 56%, rgba(244,248,251,0) 72%),
       var(--login-bg-image) center/cover no-repeat;
@@ -681,8 +681,7 @@
   .login-card-wrap{
     position:relative;
     width:100%;
-    max-width:400px;
-    margin-top:64px;
+    max-width:1200px;
   }
   .login-box{
     width:100%;
@@ -690,38 +689,30 @@
     backdrop-filter:blur(8px);
     -webkit-backdrop-filter:blur(8px);
     border:1px solid rgba(255,255,255,.7);
-    border-radius:28px;
-    padding:38px 34px 32px;
+    border-radius:84px;
+    padding:114px 102px 96px;
     box-shadow:0 30px 70px rgba(18,48,73,.2);
-    animation:loginSwipeIn .7s cubic-bezier(.16,.84,.44,1) both;
+    animation:loginSwipeIn 2.1s cubic-bezier(.16,.84,.44,1) both;
   }
   .login-welcome{
-    position:absolute;
-    top:-64px;
-    left:50%;
+    position:static;
     font-family:'Caveat', cursive;
     font-weight:700;
-    font-size:132px;
+    font-size:396px;
     line-height:1;
     white-space:nowrap;
+    text-align:center;
+    color:var(--navy);
     pointer-events:none;
-    z-index:2;
-    background-image:var(--login-bg-image);
-    background-size:820px 462px;
-    background-position:-60px -70px;
-    -webkit-background-clip:text;
-    background-clip:text;
-    color:transparent;
-    -webkit-text-fill-color:transparent;
-    animation:loginSwipeInWelcome .8s cubic-bezier(.16,.84,.44,1) both;
+    animation:loginSwipeInWelcome 2.4s cubic-bezier(.16,.84,.44,1) both;
   }
   @keyframes loginSwipeIn{
     from{ transform:translateX(-70px); opacity:0; }
     to{ transform:translateX(0); opacity:1; }
   }
   @keyframes loginSwipeInWelcome{
-    from{ transform:translateX(calc(-50% - 70px)); opacity:0; }
-    to{ transform:translateX(-50%); opacity:1; }
+    from{ transform:translateY(-70px); opacity:0; }
+    to{ transform:translateY(0); opacity:1; }
   }
   .login-box label{ margin-top:12px; }
   .login-box label:first-of-type{ margin-top:0; }
@@ -737,10 +728,11 @@
     margin-top:10px;
   }
   .login-box button.primary{
-    width:100%;
+    display:block;
+    width:60%;
     text-align:center;
-    margin-top:16px;
-    padding:12px 16px;
+    margin:48px auto 0;
+    padding:36px 48px;
     border-radius:999px;
     background:linear-gradient(120deg, var(--brass), var(--navy));
     font-weight:700;
@@ -748,14 +740,16 @@
   }
   #app-shell{ display:none; }
   @media(max-width:640px){
-    #login-screen{ justify-content:center; padding:0 6vw; }
+    #login-screen{ justify-content:center; padding:28px 4vw; }
     #login-screen{
       background:
         linear-gradient(180deg, rgba(244,248,251,.55) 0%, rgba(244,248,251,.92) 62%, rgba(244,248,251,.98) 100%),
         var(--login-bg-image) center 18%/cover no-repeat;
     }
-    .login-card-wrap{ margin-top:48px; }
-    .login-welcome{ font-size:88px; top:-46px; background-size:560px 315px; background-position:-40px -50px; }
+    .login-card-wrap{ max-width:100%; }
+    .login-box{ border-radius:36px; padding:42px 28px 36px; }
+    .login-welcome{ font-size:264px; white-space:normal; }
+    .login-box button.primary{ width:80%; padding:18px 24px; margin-top:28px; }
   }
   .signout-link{
     all:unset;
@@ -1046,8 +1040,8 @@
 
 <div id="login-screen">
   <div class="login-card-wrap">
-    <div class="login-welcome">Welcome</div>
     <div class="login-box">
+      <div class="login-welcome">Welcome</div>
       <label for="login-email">Email</label>
       <input id="login-email" type="email" autocomplete="username" placeholder="you@example.com">
       <label for="login-password">Password</label>
