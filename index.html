@@ -940,6 +940,10 @@
   .prufin-controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:16px;}
   .prufin-controls-label{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
   .prufin-controls-label select{width:auto; padding:7px 10px; font-size:13px; border-radius:8px; border:1px solid var(--line); font-family:inherit;}
+  .prufin-manual-form{display:flex; flex-wrap:wrap; align-items:end; gap:14px; margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);}
+  .prufin-manual-form label{display:flex; flex-direction:column; gap:4px; font-size:11.5px; font-weight:700; color:var(--ink-soft);}
+  .prufin-manual-form select, .prufin-manual-form input{padding:8px 10px; font-size:13px; border:1px solid var(--line); border-radius:8px; font-family:inherit; min-width:150px;}
+  .prufin-manual-form button{align-self:end;}
   .rewards-subsection{margin-top:20px; padding-top:16px; border-top:1px solid var(--line);}
   .rewards-subsection:first-child{margin-top:0; padding-top:0; border-top:none;}
   .rewards-subsection h3{margin:0 0 4px; color:var(--navy); font-size:14.5px;}
@@ -2396,6 +2400,12 @@ async function renderPrufinEstimateSection(){
       actualNetByMonth[p.monthIndex] += p.net;
     }
   });
+  const manualEntries = await getEntries('prufin-manual-actuals');
+  const manualForYear = manualEntries.filter(m => m.year === prufinViewYear).sort((a, b) => a.monthIndex - b.monthIndex);
+  manualForYear.forEach(m => {
+    actualByMonth[m.monthIndex] += m.amount;
+    actualNetByMonth[m.monthIndex] += m.amount * (1 - PRUFIN_TAX_RATE);
+  });
   const totalActualGross = visibleIdx.reduce((a, i) => a + actualByMonth[i], 0);
   const totalActualNet = visibleIdx.reduce((a, i) => a + actualNetByMonth[i], 0);
   const compareHtml = `
@@ -2411,6 +2421,31 @@ async function renderPrufinEstimateSection(){
           </tbody>
         </table>
       </div>
+      <div class="prufin-manual-form">
+        <label>Select month
+          <select id="prufin-manual-month">
+            ${visibleIdx.map(i => `<option value="${i}">${MONTHS[i]}</option>`).join('')}
+          </select>
+        </label>
+        <label>Commission
+          <input type="number" id="prufin-manual-amount" placeholder="e.g. 5000" step="0.01">
+        </label>
+        <button class="primary" onclick="addPrufinManualActual()">Add to Actual</button>
+      </div>
+      <div class="save-note" id="prufin-manual-note"></div>
+      ${manualForYear.length ? `
+        <div class="statistics-table-wrap" style="margin-top:10px;">
+          <table class="statistics-table">
+            <thead><tr><th style="text-align:left;">Month</th><th>Commission Entered</th><th></th></tr></thead>
+            <tbody>${manualForYear.map(m => `
+              <tr>
+                <td style="text-align:left;">${MONTHS[m.monthIndex]}</td>
+                <td class="num">${fmtCurrency(m.amount)}</td>
+                <td class="num"><button class="clear-link" onclick="removePrufinManualActual('${m.id}')">Remove</button></td>
+              </tr>`).join('')}</tbody>
+          </table>
+        </div>
+      ` : ''}
     </div>
   `;
 
@@ -2426,6 +2461,35 @@ async function renderPrufinEstimateSection(){
     : '';
 
   mount.innerHTML = tableHtml + compareHtml + warningsHtml;
+}
+
+async function addPrufinManualActual(){
+  const monthSelect = document.getElementById('prufin-manual-month');
+  const amountInput = document.getElementById('prufin-manual-amount');
+  const note = document.getElementById('prufin-manual-note');
+  const amount = parseFloat(amountInput.value);
+  if(!monthSelect || isNaN(amount) || amount <= 0){
+    if(note) note.textContent = 'Enter a valid commission amount.';
+    return;
+  }
+  const entries = await getEntries('prufin-manual-actuals');
+  entries.push({
+    id: 'm' + Date.now() + Math.random().toString(36).slice(2, 7),
+    year: prufinViewYear,
+    monthIndex: Number(monthSelect.value),
+    amount,
+  });
+  const ok = await saveEntries('prufin-manual-actuals', entries);
+  if(note) note.textContent = ok ? 'Added.' : 'Could not save — please try again.';
+  await renderPrufinEstimateSection();
+  await renderPrufinActualSection();
+}
+async function removePrufinManualActual(id){
+  const entries = await getEntries('prufin-manual-actuals');
+  const filtered = entries.filter(m => m.id !== id);
+  await saveEntries('prufin-manual-actuals', filtered);
+  await renderPrufinEstimateSection();
+  await renderPrufinActualSection();
 }
 
 function openPrufinBatchModal(batchKey){
@@ -2495,6 +2559,8 @@ async function renderPrufinActualSection(){
   }
   const tracker = await getEntries('prufin-payment-tracker');
   const paidSet = new Set(tracker.filter(t => t.year === prufinViewYear).map(t => t.clientKey + '|' + t.monthIndex));
+  const manualEntries = await getEntries('prufin-manual-actuals');
+  const manualForYear = manualEntries.filter(m => m.year === prufinViewYear);
 
   let actualGross = 0, actualNet = 0, estGross = 0, estNet = 0;
   const byClient = {}; // clientKey -> { name, clientType, plan, mode, months:{monthIndex:{gross,net,rate,paid}} }
@@ -2508,6 +2574,9 @@ async function renderPrufinActualSection(){
     byClient[p.clientKey].months[p.monthIndex].net += p.net;
     byClient[p.clientKey].months[p.monthIndex].paid = paid;
   });
+  const manualTotal = manualForYear.reduce((a, m) => a + m.amount, 0);
+  actualGross += manualTotal;
+  actualNet += manualTotal * (1 - PRUFIN_TAX_RATE);
   const clientRows = Object.values(byClient).sort((a, b) => a.name.localeCompare(b.name));
   clientRows.forEach(c => {
     const nets = Object.values(c.months).map(m => m.net);
@@ -2519,7 +2588,7 @@ async function renderPrufinActualSection(){
   const summaryHtml = `
     <div class="statistics-grid" style="margin-bottom:16px;">
       <div class="statistics-card prufin-summary-card estimate"><h3>Estimated</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(estGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(estNet)}</div></div></div></div>
-      <div class="statistics-card prufin-summary-card actual"><h3>Actual (Paid)</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(actualGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(actualNet)}</div></div></div></div>
+      <div class="statistics-card prufin-summary-card actual"><h3>Actual (Paid)</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(actualGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(actualNet)}</div></div></div>${manualTotal ? `<div class="statistics-note">Includes ${fmtCurrency(manualTotal)} from ${manualForYear.length} manual entr${manualForYear.length === 1 ? 'y' : 'ies'}</div>` : ''}</div>
       <div class="statistics-card"><h3>Collected</h3><div class="statistics-values"><div><div class="statistics-label">% of Estimated Gross</div><div class="statistics-value">${collectionRate.toFixed(1)}%</div></div></div></div>
     </div>
   `;
