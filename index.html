@@ -1080,6 +1080,7 @@
   .prufin-client-link:hover{color:var(--brass); text-decoration:underline;}
   .prufin-tracker-table td.prufin-na{color:var(--ink-soft); opacity:.5;}
   .prufin-tracker-table th{white-space:nowrap;}
+  .prufin-tracker-totals-row th{background:var(--brass-soft); color:var(--brass-dark); text-transform:none; font-size:12px; white-space:nowrap;}
   .prufin-clickable-row{cursor:pointer;}
   .prufin-clickable-row:hover{background:var(--brass-soft);}
   .prufin-cell-sub{font-size:10.5px; font-weight:500; color:var(--ink-soft); margin-top:2px;}
@@ -3315,6 +3316,12 @@ async function renderHmoCompanyTable(clients, overrides, tracker){
     return;
   }
 
+  const monthlyTotals = MONTHS.map((_, m) => sorted.reduce((sum, row) => {
+    const scheduleMonths = hmoScheduleMonths(row, hmoViewYear);
+    if(!scheduleMonths.includes(m)) return sum;
+    return sum + parseCurrency(row.premium) * rate;
+  }, 0));
+
   const rows = sorted.map(row => {
     const key = hmoClientKey(row);
     const scheduleMonths = new Set(hmoScheduleMonths(row, hmoViewYear));
@@ -3345,7 +3352,12 @@ async function renderHmoCompanyTable(clients, overrides, tracker){
           <th style="text-align:left;">Mode</th>
           <th style="text-align:left;">Schedule of Payments</th>
           ${MONTHS.map(m => `<th>${m.slice(0,3)}</th>`).join('')}
-        </tr></thead>
+        </tr>
+        <tr class="prufin-tracker-totals-row">
+          <th colspan="5" style="text-align:left; font-weight:600;">Total Commission This Month</th>
+          ${monthlyTotals.map(total => `<th class="num">${total ? fmtCurrency(total) : '—'}</th>`).join('')}
+        </tr>
+        </thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
