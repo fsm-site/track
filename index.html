@@ -1108,6 +1108,12 @@
     opacity:.75;
   }
   .prufin-tracker-table select{padding:7px 9px; font-size:12.5px; border:1px solid var(--line); border-radius:8px; font-family:inherit; min-width:150px;}
+  .prufin-highlight-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:16px;}
+  .prufin-highlight-grid .prufin-highlight-box{margin-bottom:0;}
+  .prufin-highlight-grid .prufin-highlight-box .phb-value{font-size:23px;}
+  @media(max-width:900px){.prufin-highlight-grid{grid-template-columns:1fr;}}
+  .toggle-pill-btn{all:unset; cursor:pointer; padding:7px 16px; border-radius:999px; font-size:12.5px; font-weight:700; background:var(--navy); color:#fff; display:inline-block; margin-bottom:14px;}
+  .toggle-pill-btn:hover{background:var(--brass);}
   .statistics-bar-value{color:var(--navy); font-weight:700; white-space:nowrap;}
   .statistics-assessment{margin-top:28px; padding:20px 24px; border:1px solid var(--brass); border-radius:14px; background:linear-gradient(135deg,#fff,var(--brass-soft) 220%); color:var(--navy);}
   .statistics-assessment h2{margin:0 0 8px; font-size:17px;}
@@ -1972,6 +1978,7 @@ function buildTablePanel(item, groupLabel, config){
             <option value="all">All years</option>${[2022,2023,2024,2025,2026,2027,2028,2029].map(year => `<option value="${year}">${year}</option>`).join('')}
           </select>
         </label>` : ''}
+        ${item.id === 'pru-clients' ? `<button class="toggle-pill-btn" id="${item.id}-toggle-clients" style="margin-bottom:0;" onclick="toggleIssuedClientsVisible()">Show Clients</button>` : ''}
         <button class="clear-link" onclick="clearEntries('${item.id}')">Clear all</button>
       </div>
     </div>
@@ -2252,6 +2259,7 @@ let prufinActivePlanKey = PRUFIN_BASE_PLAN_KEYS[0];
 let prufinViewYear = 2026;             // year being viewed in the Estimated/Actual sections
 let prufinClientFilter = 'all';        // 'all' | 'own' | 'adopted'
 let prufinLastEstimate = null;         // cached so the batch popup doesn't need to recompute
+let prufinShowClients = false;         // Actual Commissions tracker: client table hidden by default
 
 function prufinAllPlanKeys(customPlans){
   const extra = (customPlans || []).filter(p => !PRUFIN_BASE_PLAN_KEYS.includes(p));
@@ -2758,20 +2766,41 @@ async function renderPrufinActualSection(){
   });
   prufinActualClientRows = clientRows; // cached for the client-detail popup
 
-  const collectionRate = estGross ? (actualGross / estGross) * 100 : 0;
-  const filterLabel = prufinClientFilter === 'own' ? 'Own' : prufinClientFilter === 'adopted' ? 'Adopted' : 'All';
+  // Split the year's estimate into what's already "due" by now (year-to-date)
+  // vs what's still ahead, so the three boxes read as: what should already be
+  // in, what's still coming for the rest of the year, and what's actually in.
+  const today = new Date();
+  const asOfIdx = prufinViewYear < today.getFullYear() ? 11
+    : prufinViewYear > today.getFullYear() ? -1
+    : today.getMonth();
+  let ytdEstGross = 0, ytdEstNet = 0;
+  est.paymentsFlat.forEach(p => {
+    if(p.monthIndex <= asOfIdx){ ytdEstGross += p.gross; ytdEstNet += p.net; }
+  });
+  const leftEstGross = estGross - ytdEstGross;
+  const leftEstNet = estNet - ytdEstNet;
 
   const highlightHtml = `
-    <div class="prufin-highlight-box">
-      <div class="phb-label">Est. Total Commissions to be Collected for ${prufinViewYear}</div>
-      <div class="phb-value">${fmtCurrency(estGross)}</div>
-      <div class="phb-sub">Net after 3% tax: ${fmtCurrency(estNet)} · ${filterLabel} clients</div>
-    </div>
-    <div class="statistics-grid" style="margin-bottom:16px;">
-      <div class="statistics-card prufin-summary-card actual"><h3>Actual (Paid)</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(actualGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(actualNet)}</div></div></div>${manualTotal ? `<div class="statistics-note">Includes ${fmtCurrency(manualTotal)} from ${manualForYear.length} manual entr${manualForYear.length === 1 ? 'y' : 'ies'}</div>` : ''}</div>
-      <div class="statistics-card"><h3>Collected</h3><div class="statistics-values"><div><div class="statistics-label">% of Estimated Gross</div><div class="statistics-value">${collectionRate.toFixed(1)}%</div></div></div></div>
+    <div class="prufin-highlight-grid">
+      <div class="prufin-highlight-box">
+        <div class="phb-label">YTD Estimated Commissions</div>
+        <div class="phb-value">${fmtCurrency(ytdEstGross)}</div>
+        <div class="phb-sub">Net after 3% tax: ${fmtCurrency(ytdEstNet)}</div>
+      </div>
+      <div class="prufin-highlight-box">
+        <div class="phb-label">Est. Commissions Left to be Collected</div>
+        <div class="phb-value">${fmtCurrency(leftEstGross)}</div>
+        <div class="phb-sub">Net after 3% tax: ${fmtCurrency(leftEstNet)}</div>
+      </div>
+      <div class="prufin-highlight-box">
+        <div class="phb-label">YTD Actual Commissions</div>
+        <div class="phb-value">${fmtCurrency(actualGross)}</div>
+        <div class="phb-sub">Net after 3% tax: ${fmtCurrency(actualNet)}${manualTotal ? ` · incl. ${fmtCurrency(manualTotal)} manual` : ''}</div>
+      </div>
     </div>
   `;
+
+  const toggleHtml = `<button class="toggle-pill-btn" onclick="togglePrufinShowClients()">${prufinShowClients ? 'Hide Clients' : 'Show Clients'}</button>`;
 
   const tableHtml = clientRows.length
     ? `<div class="statistics-table-wrap">
@@ -2808,7 +2837,11 @@ async function renderPrufinActualSection(){
       </div>`
     : `<div class="rs-sub">No expected payments for ${prufinViewYear} yet.</div>`;
 
-  mount.innerHTML = highlightHtml + tableHtml;
+  mount.innerHTML = highlightHtml + toggleHtml + (prufinShowClients ? tableHtml : '');
+}
+async function togglePrufinShowClients(){
+  prufinShowClients = !prufinShowClients;
+  await renderPrufinActualSection();
 }
 
 let prufinActualClientRows = [];
@@ -3495,6 +3528,11 @@ async function renderList(id){
 const sortState = {};
 const searchState = {};
 let clientYearFilter = 'all';
+let issuedClientsVisible = false; // Issued Clients table hidden by default
+async function toggleIssuedClientsVisible(){
+  issuedClientsVisible = !issuedClientsVisible;
+  await renderTable('pru-clients');
+}
 function setClientYear(value){
   clientYearFilter = value;
   renderTable('pru-clients');
@@ -3897,6 +3935,17 @@ async function renderTable(id){
           <div class="client-metric secondary"><div class="client-metric-label">Total SA Since Inception</div><div class="client-metric-value">${fmtCurrency(totalSA)}</div></div>
         </div>
       </div>`;
+  }
+
+  if(id === 'pru-clients'){
+    const toggleBtn = document.getElementById(id + '-toggle-clients');
+    if(toggleBtn) toggleBtn.textContent = issuedClientsVisible ? 'Hide Clients' : 'Show Clients';
+    if(!issuedClientsVisible){
+      listEl.innerHTML = `<div class="rs-sub">Client list is hidden. Click "Show Clients" above to view the table.</div>`;
+      await renderGroupCount(idToGroup(id));
+      await renderRewardsPanel(); await renderPrufinPanel(); if(prufinStatsOpen) await renderPrufinStatisticsPanel();
+      return;
+    }
   }
 
   if(entries.length === 0){
