@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bam's Masterlist</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#262624">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Masterlist">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
@@ -4417,6 +4424,15 @@ window.initApp = async function initApp(){
   if(statisticsOpen) await renderStatisticsPanel();
   if(prufinStatsOpen) await renderPrufinStatisticsPanel();
 };
+
+// PWA: register the app-shell service worker (enables "Install" / Add to
+// Home Screen). Safe to no-op if the file is opened without HTTPS/localhost
+// or the browser doesn't support service workers.
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker registration failed:', err));
+  });
+}
 </script>
 
 </body>
