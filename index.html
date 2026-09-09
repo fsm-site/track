@@ -2204,7 +2204,7 @@ function buildPrufinPanel(item, groupLabel){
     <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
     <h1>${item.label}</h1>
     <div class="sub">${groupLabel} · commission rates, a monthly estimate, and an actual-payment tracker from your Issued Clients</div>
-    <button class="prufin-stats-link" onclick="openPrufinStatistics()">📊 View Prufin Statistics</button>
+    <button class="prufin-stats-link" onclick="openPrufinStatistics()">📊 View Prufinated Statistics</button>
 
     <div class="rewards-section">
       <h2>Commission Rate Schedule</h2>
@@ -2740,6 +2740,7 @@ function prufinBarRows(rows, labelKey, valueKey, formatter){
 }
 
 async function openPrufinStatistics(){
+  if(activeGroup !== 'pru' || activeLeaf !== 'prufin') return;
   prufinStatsOpen = true;
   prufinStatsYear = prufinViewYear;
   prufinStatsFilter = prufinClientFilter;
@@ -3085,6 +3086,9 @@ function closeStatistics(){
 
 /* ---------- view switching ---------- */
 function renderView(){
+  if(prufinStatsOpen && (activeGroup !== 'pru' || activeLeaf !== 'prufin')){
+    prufinStatsOpen = false;
+  }
   if(prufinStatsOpen){
     boxGrid.style.display = 'none';
     document.getElementById('group-title').style.display = 'none';
@@ -3117,6 +3121,7 @@ function renderView(){
 function selectGroup(groupId){
   activeGroup = groupId;
   activeLeaf = null;
+  if(groupId !== 'pru') prufinStatsOpen = false;
   saveViewState();
   renderGroupNav();
   renderBoxGrid();
@@ -3126,6 +3131,7 @@ function selectGroup(groupId){
 function selectLeaf(groupId, leafId){
   activeGroup = groupId;
   activeLeaf = leafId;
+  if(groupId !== 'pru' || leafId !== 'prufin') prufinStatsOpen = false;
   saveViewState();
   renderGroupNav();
   renderView();
@@ -3133,6 +3139,7 @@ function selectLeaf(groupId, leafId){
 
 function backToGrid(){
   activeLeaf = null;
+  prufinStatsOpen = false;
   saveViewState();
   renderBoxGrid();
   renderView();
