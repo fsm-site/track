@@ -994,6 +994,62 @@
   @media(max-width:700px){.prufin-rate-grid{grid-template-columns:repeat(3,1fr);}}
   .prufin-stats-link{all:unset; cursor:pointer; display:inline-block; margin:4px 0 18px; padding:8px 16px; border-radius:999px; font-size:12.5px; font-weight:700; color:#fff; background:var(--navy);}
   .prufin-stats-link:hover{background:var(--brass);}
+  .whats-next-panel{max-width:1180px;}
+  .whats-next-head{display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:20px;}
+  .whats-next-head h1{margin-bottom:5px;}
+  .whats-next-today{color:var(--brass-dark); font-size:13px; font-weight:700;}
+  .whats-next-calendar{padding:20px; margin-bottom:22px;}
+  .whats-next-calendar-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;}
+  .whats-next-calendar-head h2{margin:0; color:var(--navy); font-size:20px;}
+  .whats-next-month-button{all:unset; cursor:pointer; color:var(--navy); font-size:22px; padding:4px 10px; border-radius:8px;}
+  .whats-next-month-button:hover{background:var(--brass-soft);}
+  .whats-next-weekdays,.whats-next-calendar-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px;}
+  .whats-next-weekdays{margin-bottom:6px; color:var(--ink-soft); font-size:10px; font-weight:800; text-align:center; text-transform:uppercase; letter-spacing:.4px;}
+  .whats-next-day{min-height:74px; position:relative; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); padding:8px; text-align:left; cursor:pointer;}
+  .whats-next-day:hover,.whats-next-day.selected{border-color:var(--brass); box-shadow:0 0 0 2px var(--brass-soft);}
+  .whats-next-day.muted{opacity:.42;}
+  .whats-next-day.today{background:var(--brass-soft);}
+  .whats-next-day-number{font-size:12px; font-weight:800;}
+  .whats-next-day-indicators{display:flex; flex-wrap:wrap; gap:3px; margin-top:12px;}
+  .whats-next-dot{width:7px; height:7px; border-radius:50%; display:inline-block; background:var(--navy);}
+  .whats-next-dot.event{background:var(--brass);}.whats-next-dot.note{background:var(--ink-soft);}.whats-next-dot.habit{background:#6d927d;}.whats-next-dot.money{background:#b67a35;}
+  .whats-next-rating{position:absolute; right:7px; top:7px; width:9px; height:9px; border-radius:50%;}
+  .whats-next-rating.green{background:#4f986b;}.whats-next-rating.blue{background:#4b7da9;}.whats-next-rating.yellow{background:#c49a3b;}.whats-next-rating.red{background:#bd554c;}
+  .whats-next-workspace{display:grid; grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr); gap:18px; align-items:start;}
+  .whats-next-main,.whats-next-side{display:grid; gap:16px;}
+  .whats-next-card{padding:20px;}
+  .whats-next-card h2{margin:0 0 12px; color:var(--navy); font-size:18px;}
+  .whats-next-card h3{margin:0 0 8px; color:var(--navy); font-size:14px;}
+  .whats-next-date{font-size:13px; color:var(--ink-soft); font-weight:700; margin-bottom:16px;}
+  .whats-next-rating-options{display:flex; flex-wrap:wrap; gap:8px;}
+  .whats-next-rating-option{all:unset; cursor:pointer; padding:8px 11px; border:1px solid var(--line); border-radius:999px; color:var(--ink-soft); font-size:12px; font-weight:700;}
+  .whats-next-rating-option.active{border-color:currentColor; background:var(--stripe); color:var(--navy);}
+  .whats-next-rating-option.green{color:#397a52;}.whats-next-rating-option.blue{color:#3e6990;}.whats-next-rating-option.yellow{color:#9b7627;}.whats-next-rating-option.red{color:#a6423b;}
+  .whats-next-checklist{display:grid; gap:7px;}
+  .whats-next-check-row{display:flex; align-items:center; gap:9px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px;}
+  .whats-next-check-row:last-child{border-bottom:0;}
+  .whats-next-check-row input{width:auto; margin:0; accent-color:var(--brass);}
+  .whats-next-check-row.done span{text-decoration:line-through; color:var(--ink-soft);}
+  .whats-next-item-actions{margin-left:auto; display:flex; gap:7px;}
+  .whats-next-item-actions button{all:unset; cursor:pointer; color:var(--ink-soft); font-size:11px; font-weight:700;}
+  .whats-next-item-actions button:hover{color:var(--brass);}
+  .whats-next-add-row{display:flex; gap:7px; margin-top:10px;}
+  .whats-next-add-row input,.whats-next-add-row select{min-width:0; padding:8px 9px; font-size:12px;}
+  .whats-next-add-row button{white-space:nowrap; padding:8px 12px;}
+  .whats-next-quick-add{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
+  .whats-next-quick-add button{padding:8px 11px; font-size:12px;}
+  .whats-next-events{display:grid; gap:7px;}
+  .whats-next-event{display:flex; justify-content:space-between; gap:12px; padding:8px 10px; background:var(--stripe); border-radius:8px; font-size:12px;}
+  .whats-next-event small{color:var(--ink-soft);}
+  .whats-next-notes{display:grid; gap:10px;}
+  .whats-next-notes label{display:grid; gap:4px; color:var(--ink-soft); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.3px;}
+  .whats-next-notes textarea{min-height:54px; font-size:12px;}
+  .whats-next-summary{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
+  .whats-next-summary div{padding:10px; background:var(--stripe); border-radius:8px; color:var(--ink-soft); font-size:11px;}
+  .whats-next-summary strong{display:block; margin-top:3px; color:var(--navy); font-size:17px;}
+  .whats-next-empty{color:var(--ink-soft); font-size:12px; padding:6px 0;}
+  @media(max-width:850px){.whats-next-workspace{grid-template-columns:1fr;}.whats-next-side{grid-template-columns:repeat(2,minmax(0,1fr));}.whats-next-side .whats-next-card:last-child{grid-column:1 / -1;}}
+  @media(max-width:560px){.whats-next-head{display:block;}.whats-next-calendar{padding:10px;}.whats-next-weekdays,.whats-next-calendar-grid{gap:3px;}.whats-next-day{min-height:54px; padding:5px;}.whats-next-day-indicators{margin-top:8px;}.whats-next-day-number{font-size:11px;}.whats-next-side{grid-template-columns:1fr;}.whats-next-side .whats-next-card:last-child{grid-column:auto;}.whats-next-add-row{flex-wrap:wrap;}.whats-next-add-row input,.whats-next-add-row select{flex:1 1 120px;}.whats-next-add-row button{flex:0 0 auto;}}
   .prufin-controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:16px;}
   .prufin-controls-label{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
   .prufin-controls-label select{width:auto; padding:7px 10px; font-size:13px; border-radius:8px; border:1px solid var(--line); font-family:inherit;}
@@ -1220,6 +1276,7 @@ const GROUPS = [
     { id: "pru-leads", label: "PRU LEADS" },
     { id: "pru-servicing", label: "CLIENT SERVICING" },
     { id: "prufin", label: "PRUFINATED" },
+    { id: "whats-next", label: "WHAT'S NEXT" },
   ]},
   { id: "hmo", label: "HUSTLES", items: [
     { id: "hmo-clients", label: "ISSUED CLIENTS" },
@@ -2941,6 +2998,176 @@ function setupApeAutoCalc(item, config){
   modeEl.addEventListener('change', recalc);
 }
 
+const WHATS_NEXT_CATEGORIES = [
+  'MONEY-MAKING', 'BUSINESS-BUILDING', 'CLIENT CARE', 'LIFE-BUILDING', 'MAINTENANCE'
+];
+const WHATS_NEXT_CATEGORY_EXAMPLES = {
+  'MONEY-MAKING': 'Lead generation, follow-up, presentation, closing, application, referral',
+  'BUSINESS-BUILDING': 'FB Ads, content creation, website work, ManyChat, marketing',
+  'CLIENT CARE': 'Client servicing, policy review, claims assistance, renewal reminder',
+  'LIFE-BUILDING': 'Exercise, reading, learning, travel planning, spiritual time, rest',
+  'MAINTENANCE': 'Admin, bills, email, errands, cleaning, organization'
+};
+const WHATS_NEXT_RATINGS = [
+  ['green', 'GREEN', 'Good day'], ['blue', 'BLUE', 'Calm day'],
+  ['yellow', 'YELLOW', 'Heavy day'], ['red', 'RED', 'Survival day']
+];
+let whatsNextMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let whatsNextSelectedDate = whatsNextDateKey(new Date());
+
+function whatsNextDateKey(date){
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function whatsNextDateLabel(key){
+  return new Date(key + 'T00:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+}
+function whatsNextBlankDay(){
+  return { rating:'', top3:['','',''].map(text => ({ text, done:false })), tasks:[], money:[], business:[], client:[], life:[], maintenance:[], habits:[], events:[], notes:{ feeling:'', happened:'', worked:'', didnt:'', remember:'', next:'' }, income:'', people:'' };
+}
+function whatsNextNormalizeDay(day){
+  const clean = { ...whatsNextBlankDay(), ...(day || {}) };
+  clean.top3 = [0,1,2].map(i => ({ text:clean.top3?.[i]?.text || '', done:Boolean(clean.top3?.[i]?.done) }));
+  WHATS_NEXT_CATEGORIES.forEach(category => {
+    const key = category === 'MONEY-MAKING' ? 'money' : category === 'BUSINESS-BUILDING' ? 'business' : category === 'CLIENT CARE' ? 'client' : category === 'LIFE-BUILDING' ? 'life' : 'maintenance';
+    clean[key] = Array.isArray(clean[key]) ? clean[key] : [];
+  });
+  clean.tasks = Array.isArray(clean.tasks) ? clean.tasks : [];
+  clean.habits = Array.isArray(clean.habits) ? clean.habits : [];
+  clean.events = Array.isArray(clean.events) ? clean.events : [];
+  clean.notes = { ...whatsNextBlankDay().notes, ...(clean.notes || {}) };
+  return clean;
+}
+async function whatsNextRecord(){
+  const records = await getEntries('whats-next');
+  if(!records[0]) records.push({ id:'workspace', days:{} });
+  records[0].days = records[0].days || {};
+  return { records, record:records[0] };
+}
+async function whatsNextSave(record, records){
+  return saveEntries('whats-next', records || [record]);
+}
+function whatsNextDayHasNotes(day){
+  return Object.values(day.notes || {}).some(Boolean) || Boolean(day.income) || Boolean(day.people);
+}
+function whatsNextIndicators(day){
+  return [
+    day.tasks?.length ? 'task' : '', day.events?.length ? 'event' : '',
+    whatsNextDayHasNotes(day) ? 'note' : '', day.habits?.length ? 'habit' : '',
+    day.money?.length ? 'money' : ''
+  ].filter(Boolean);
+}
+function whatsNextCategoryKey(category){
+  return category === 'MONEY-MAKING' ? 'money' : category === 'BUSINESS-BUILDING' ? 'business' : category === 'CLIENT CARE' ? 'client' : category === 'LIFE-BUILDING' ? 'life' : 'maintenance';
+}
+function whatsNextTaskRows(items, kind, dateKey){
+  if(!items.length) return '<div class="whats-next-empty">Nothing here yet.</div>';
+  return `<div class="whats-next-checklist">${items.map((item, index) => `<div class="whats-next-check-row ${item.done ? 'done' : ''}"><input type="checkbox" ${item.done ? 'checked' : ''} onchange="whatsNextToggle('${dateKey}','${kind}',${index})"><span>${escapeHtml(item.text || item.title || '')}</span><div class="whats-next-item-actions"><button onclick="whatsNextEdit('${dateKey}','${kind}',${index})">Edit</button><button onclick="whatsNextDelete('${dateKey}','${kind}',${index})">Remove</button></div></div>`).join('')}</div>`;
+}
+function whatsNextAddRow(category, dateKey, id){
+  return `<div class="whats-next-add-row"><input id="${id}" type="text" placeholder="Add to ${category.toLowerCase()}"><button class="primary" onclick="whatsNextAddTask('${dateKey}','${category}','${id}')">Add</button></div>`;
+}
+function whatsNextCategorySection(category, day, dateKey){
+  const key = whatsNextCategoryKey(category);
+  return `<div class="whats-next-card card"><h2>${category}</h2><div class="sub">${WHATS_NEXT_CATEGORY_EXAMPLES[category]}</div>${whatsNextTaskRows(day[key], key, dateKey)}${whatsNextAddRow(category, dateKey, 'whats-next-' + key + '-input')}</div>`;
+}
+function whatsNextCalendar(record){
+  const year = whatsNextMonth.getFullYear();
+  const month = whatsNextMonth.getMonth();
+  const first = new Date(year, month, 1);
+  const start = new Date(year, month, 1 - first.getDay());
+  const today = whatsNextDateKey(new Date());
+  const cells = Array.from({length:42}, (_, index) => {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+    const key = whatsNextDateKey(date);
+    const day = whatsNextNormalizeDay(record.days[key]);
+    const indicators = whatsNextIndicators(day);
+    return `<button class="whats-next-day ${date.getMonth() !== month ? 'muted' : ''} ${key === today ? 'today' : ''} ${key === whatsNextSelectedDate ? 'selected' : ''}" onclick="whatsNextSelectDate('${key}')"><span class="whats-next-day-number">${date.getDate()}</span>${day.rating ? `<i class="whats-next-rating ${day.rating}"></i>` : ''}<span class="whats-next-day-indicators">${indicators.map(type => `<i class="whats-next-dot ${type}"></i>`).join('')}</span></button>`;
+  }).join('');
+  return `<section class="whats-next-calendar card"><div class="whats-next-calendar-head"><button class="whats-next-month-button" onclick="whatsNextChangeMonth(-1)" aria-label="Previous month">←</button><h2>${MONTHS[month]} ${year}</h2><button class="whats-next-month-button" onclick="whatsNextChangeMonth(1)" aria-label="Next month">→</button></div><div class="whats-next-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class="whats-next-calendar-grid">${cells}</div></section>`;
+}
+function whatsNextSummary(day){
+  const groups = [['Tasks completed', day.tasks], ['Money-making activities completed', day.money], ['Business-building activities completed', day.business], ['Client-care activities completed', day.client], ['Life-building activities completed', day.life], ['Maintenance completed', day.maintenance], ['Habits completed', day.habits]];
+  const optional = [];
+  if(day.income) optional.push(`<div>Income generated<strong>${escapeHtml(day.income)}</strong></div>`);
+  if(day.people) optional.push(`<div>People helped<strong>${escapeHtml(day.people)}</strong></div>`);
+  return groups.map(([label, items]) => `<div>${label}<strong>${items.filter(item => item.done).length}</strong></div>`).join('') + optional.join('');
+}
+function whatsNextWorkspace(day, dateKey){
+  const top3 = day.top3.map((item, index) => `<div class="whats-next-check-row ${item.done ? 'done' : ''}"><input type="checkbox" ${item.done ? 'checked' : ''} onchange="whatsNextToggleTop3('${dateKey}',${index})"><input type="text" value="${escapeHtml(item.text)}" placeholder="Priority ${index + 1}" onblur="whatsNextSaveTop3('${dateKey}')"></div>`).join('');
+  const events = day.events.length ? day.events.map((event, index) => `<div class="whats-next-event"><span><strong>${escapeHtml(event.title)}</strong><br><small>${escapeHtml(event.time || '')}${event.notes ? ' · ' + escapeHtml(event.notes) : ''}</small></span><button class="row-del" onclick="whatsNextDelete('${dateKey}','events',${index})">Remove</button></div>`).join('') : '<div class="whats-next-empty">No events for this day.</div>';
+  const notes = day.notes || {};
+  return `<div class="whats-next-workspace"><div class="whats-next-main"><section class="whats-next-card card"><div class="whats-next-date">${whatsNextDateLabel(dateKey)}</div><h2>Day Rating</h2><div class="sub">This describes your capacity and experience, not your productivity or success.</div><div class="whats-next-rating-options">${WHATS_NEXT_RATINGS.map(([key, label, description]) => `<button class="whats-next-rating-option ${key} ${day.rating === key ? 'active' : ''}" onclick="whatsNextSetRating('${dateKey}','${key}')">${label} · ${description}</button>`).join('')}</div></section><section class="whats-next-card card"><h2>Top 3</h2><div class="sub">What matters most today.</div><div class="whats-next-checklist">${top3}</div></section><section class="whats-next-card card"><h2>To-do List</h2><div class="sub">Tasks are things you finish. Add a category or make your own.</div>${whatsNextTaskRows(day.tasks, 'tasks', dateKey)}<div class="whats-next-add-row"><input id="whats-next-task-input" type="text" placeholder="Add a task"><select id="whats-next-task-category"><option value="">No category</option>${WHATS_NEXT_CATEGORIES.map(category => `<option>${category}</option>`).join('')}</select><button class="primary" onclick="whatsNextAddTask('${dateKey}','tasks','whats-next-task-input')">Add</button></div></section>${whatsNextCategorySection('MONEY-MAKING', day, dateKey)}${whatsNextCategorySection('BUSINESS-BUILDING', day, dateKey)}${whatsNextCategorySection('CLIENT CARE', day, dateKey)}${whatsNextCategorySection('LIFE-BUILDING', day, dateKey)}${whatsNextCategorySection('MAINTENANCE', day, dateKey)}</div><div class="whats-next-side"><section class="whats-next-card card"><div class="whats-next-quick-add"><button class="primary" onclick="whatsNextQuickAdd('task')">+ Task</button><button class="primary" onclick="whatsNextQuickAdd('event')">+ Event</button><button class="primary" onclick="whatsNextQuickAdd('note')">+ Note</button><button class="primary" onclick="whatsNextQuickAdd('habit')">+ Habit</button><button class="primary" onclick="whatsNextQuickAdd('money')">+ Money-Making Activity</button></div><h2>Events</h2><div class="whats-next-events">${events}</div></section><section class="whats-next-card card"><h2>Habits</h2><div class="sub">Habits are things you practice, not tasks to finish.</div>${whatsNextTaskRows(day.habits, 'habits', dateKey)}${whatsNextAddRow('habit', dateKey, 'whats-next-habit-input')}</section><section class="whats-next-card card"><h2>Daily Notes / Journal</h2><div class="whats-next-notes"><label>How am I feeling?<textarea id="whats-next-feeling">${escapeHtml(notes.feeling)}</textarea></label><label>What happened today?<textarea id="whats-next-happened">${escapeHtml(notes.happened)}</textarea></label><label>What worked?<textarea id="whats-next-worked">${escapeHtml(notes.worked)}</textarea></label><label>What didn't?<textarea id="whats-next-didnt">${escapeHtml(notes.didnt)}</textarea></label><label>What do I want to remember?<textarea id="whats-next-remember">${escapeHtml(notes.remember)}</textarea></label><label>What's next?<textarea id="whats-next-next">${escapeHtml(notes.next)}</textarea></label><label>Income generated (optional)<input id="whats-next-income" type="text" value="${escapeHtml(day.income)}" placeholder="Optional amount or note"></label><label>People helped (optional)<input id="whats-next-people" type="text" value="${escapeHtml(day.people)}" placeholder="Optional count or note"></label><button class="primary" onclick="whatsNextSaveNotes('${dateKey}')">Save notes</button></div></section><section class="whats-next-card card"><h2>Daily Summary</h2><div class="whats-next-summary">${whatsNextSummary(day)}</div></section></div></div>`;
+}
+async function renderWhatsNextPanel(){
+  const panel = document.getElementById('leaf-whats-next');
+  if(!panel) return;
+  const { record } = await whatsNextRecord();
+  const day = whatsNextNormalizeDay(record.days[whatsNextSelectedDate]);
+  panel.innerHTML = `<div class="whats-next-panel"><button class="back-link" onclick="backToGrid()">← PRU</button><div class="whats-next-head"><div><h1>WHAT'S NEXT</h1><div class="sub">What matters today. What's next. What can wait.</div></div><div class="whats-next-today">Today · ${new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}</div></div>${whatsNextCalendar(record)}${whatsNextWorkspace(day, whatsNextSelectedDate)}</div>`;
+}
+async function whatsNextUpdateDay(dateKey, updater){
+  const { record, records } = await whatsNextRecord();
+  const day = whatsNextNormalizeDay(record.days[dateKey]);
+  updater(day);
+  record.days[dateKey] = day;
+  await whatsNextSave(record, records);
+  await renderWhatsNextPanel();
+}
+async function whatsNextSelectDate(dateKey){
+  whatsNextSelectedDate = dateKey;
+  const date = new Date(dateKey + 'T00:00:00');
+  whatsNextMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+  await renderWhatsNextPanel();
+}
+async function whatsNextChangeMonth(offset){
+  whatsNextMonth = new Date(whatsNextMonth.getFullYear(), whatsNextMonth.getMonth() + offset, 1);
+  await renderWhatsNextPanel();
+}
+async function whatsNextSetRating(dateKey, rating){ await whatsNextUpdateDay(dateKey, day => { day.rating = rating; }); }
+async function whatsNextToggle(dateKey, kind, index){ await whatsNextUpdateDay(dateKey, day => { if(day[kind]?.[index]) day[kind][index].done = !day[kind][index].done; }); }
+async function whatsNextToggleTop3(dateKey, index){ await whatsNextUpdateDay(dateKey, day => { day.top3[index].done = !day.top3[index].done; }); }
+async function whatsNextSaveTop3(dateKey){
+  const inputs = [...document.querySelectorAll('.whats-next-main input[type="text"]')].slice(0, 3);
+  await whatsNextUpdateDay(dateKey, day => { day.top3 = inputs.map((input, index) => ({ text:input.value.trim(), done:day.top3[index]?.done || false })); });
+}
+async function whatsNextAddTask(dateKey, category, inputId){
+  const input = document.getElementById(inputId);
+  const text = input?.value.trim();
+  if(!text) return;
+  const target = category === 'tasks' ? 'tasks' : whatsNextCategoryKey(category);
+  await whatsNextUpdateDay(dateKey, day => { day[target].push({ id:Date.now() + Math.random(), text, done:false, category:category === 'tasks' ? document.getElementById('whats-next-task-category')?.value || '' : category }); });
+}
+async function whatsNextEdit(dateKey, kind, index){
+  const { record, records } = await whatsNextRecord();
+  const day = whatsNextNormalizeDay(record.days[dateKey]);
+  const item = day[kind]?.[index];
+  if(!item) return;
+  const text = prompt('Edit item', item.text || '');
+  if(text === null || !text.trim()) return;
+  item.text = text.trim();
+  record.days[dateKey] = day;
+  await whatsNextSave(record, records);
+  await renderWhatsNextPanel();
+}
+async function whatsNextDelete(dateKey, kind, index){
+  await whatsNextUpdateDay(dateKey, day => { day[kind].splice(index, 1); });
+}
+async function whatsNextSaveNotes(dateKey){
+  const ids = ['feeling','happened','worked','didnt','remember','next'];
+  await whatsNextUpdateDay(dateKey, day => { ids.forEach(id => { day.notes[id] = document.getElementById('whats-next-' + id).value.trim(); }); day.income = document.getElementById('whats-next-income').value.trim(); day.people = document.getElementById('whats-next-people').value.trim(); });
+}
+async function whatsNextQuickAdd(type){
+  const dateKey = whatsNextSelectedDate;
+  if(type === 'task'){ document.getElementById('whats-next-task-input')?.focus(); return; }
+  if(type === 'note'){ document.getElementById('whats-next-feeling')?.focus(); return; }
+  if(type === 'habit'){ document.getElementById('whats-next-habit-input')?.focus(); return; }
+  if(type === 'money'){ document.getElementById('whats-next-money-input')?.focus(); return; }
+  const title = prompt('Event name');
+  if(!title?.trim()) return;
+  const time = prompt('Time or details (optional)', '') || '';
+  await whatsNextUpdateDay(dateKey, day => { day.events.push({ title:title.trim(), time, notes:'', id:Date.now() + Math.random() }); });
+}
+
 GROUPS.forEach(g => {
   g.items.forEach(item => {
     if(item.url) return; // link-only items (Sites) have no leaf panel
@@ -2950,6 +3177,10 @@ GROUPS.forEach(g => {
       panel = buildRewardsPanel(item, g.label);
     }else if(item.id === 'prufin'){
       panel = buildPrufinPanel(item, g.label);
+    }else if(item.id === 'whats-next'){
+      panel = document.createElement('div');
+      panel.className = 'leaf-view';
+      panel.id = 'leaf-whats-next';
     }else if(item.id === 'pru-servicing'){
       panel = buildServicingPanel(item, g.label);
     }else if(tableConfig && tableConfig.lead){
@@ -3147,6 +3378,7 @@ function backToGrid(){
 
 /* ---------- rendering: generic list ---------- */
 async function renderList(id){
+  if(id === 'whats-next') return;
   if(id === 'pru-servicing') return renderServicingTable(id);
   if(TABLE_LEAVES[id] && TABLE_LEAVES[id].lead){
     return renderLeadTable(id);
@@ -4063,6 +4295,7 @@ window.initApp = async function initApp(){
   await primeCache();
   await Promise.all(allLeafIds().map(id => renderList(id)));
   await renderAllCounts();
+  await renderWhatsNextPanel();
 
   await seedIfEmpty();
   await migrateExistingIssuedLeads();
