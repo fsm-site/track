@@ -3125,6 +3125,7 @@ function closeClientFypModal(){
 let hmoActiveCompany = HMO_COMPANIES[0];
 let hmoViewYear = Math.max(new Date().getFullYear(), HMO_RATE_YEARS[0]);
 let hmoSortMode = 'name-asc';
+let hmoShowClients = false; // Commissions client table hidden by default, like Issued Clients
 
 function hmoClientKey(row){
   return 'nm:' + String(row.name || '').trim().toLowerCase() + '|' + String(row.submitted || '').trim() + '|' + String(row.hmo || '').trim();
@@ -3284,9 +3285,14 @@ async function renderHmoHighlights(clients, overrides, tracker){
 function renderHmoCompanyTabs(){
   const mount = document.getElementById('hmo-company-tabs');
   if(!mount) return;
-  mount.innerHTML = HMO_COMPANIES.map(c => `
+  mount.innerHTML = ['All', ...HMO_COMPANIES].map(c => `
     <button class="prufin-year-tab ${c === hmoActiveCompany ? 'active' : ''}" onclick="selectHmoCompany('${prufinJsStr(c)}')">${escapeHtml(c)}</button>
   `).join('');
+}
+
+async function toggleHmoShowClients(){
+  hmoShowClients = !hmoShowClients;
+  await renderHmoCommissionsPanel();
 }
 
 async function toggleHmoPayment(clientKey, monthIndex, checked){
@@ -3300,7 +3306,8 @@ async function toggleHmoPayment(clientKey, monthIndex, checked){
 async function renderHmoCompanyTable(clients, overrides, tracker){
   const mount = document.getElementById('hmo-company-mount');
   if(!mount) return;
-  const companyClients = clients.filter(row => (row.hmo || '') === hmoActiveCompany);
+  const isAll = hmoActiveCompany === 'All';
+  const companyClients = isAll ? clients : clients.filter(row => (row.hmo || '') === hmoActiveCompany);
   const sorted = [...companyClients].sort((a, b) => {
     if(hmoSortMode === 'date-asc'){
       const aT = a.submitted ? new Date(a.submitted).getTime() : 0;
@@ -3310,17 +3317,28 @@ async function renderHmoCompanyTable(clients, overrides, tracker){
     if(hmoSortMode === 'status-asc') return (a.status || 'Active').localeCompare(b.status || 'Active');
     return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
   });
-  const rate = hmoRateFor(overrides, hmoActiveCompany);
+  const flatRate = isAll ? null : hmoRateFor(overrides, hmoActiveCompany);
+  const rateForRow = row => isAll ? hmoRateFor(overrides, row.hmo) : flatRate;
+
+  const toggleHtml = `<button class="toggle-pill-btn" onclick="toggleHmoShowClients()">${hmoShowClients ? 'Hide Clients' : 'Show Clients'}</button>`;
+  const rateNote = isAll
+    ? `<div class="rs-sub">Showing all HMO companies. Hover a checkbox to see its commission amount.</div>`
+    : `<div class="rs-sub">Commission rate for ${escapeHtml(hmoActiveCompany)}: <strong>${prufinPct(flatRate)}</strong> of Premium per scheduled payment. Hover a checkbox to see its commission amount.</div>`;
 
   if(!sorted.length){
-    mount.innerHTML = `<div class="rs-sub">No Issued clients yet for ${escapeHtml(hmoActiveCompany)}.</div>`;
+    mount.innerHTML = rateNote + toggleHtml + `<div class="rs-sub">No Issued clients yet${isAll ? '' : ' for ' + escapeHtml(hmoActiveCompany)}.</div>`;
+    return;
+  }
+
+  if(!hmoShowClients){
+    mount.innerHTML = rateNote + toggleHtml + `<div class="rs-sub">Client list is hidden. Click "Show Clients" above to view the table.</div>`;
     return;
   }
 
   const monthlyTotals = MONTHS.map((_, m) => sorted.reduce((sum, row) => {
     const scheduleMonths = hmoScheduleMonths(row, hmoViewYear);
     if(!scheduleMonths.includes(m)) return sum;
-    return sum + parseCurrency(row.premium) * rate;
+    return sum + parseCurrency(row.premium) * rateForRow(row);
   }, 0));
   const monthlyReceived = MONTHS.map((_, m) => sorted.reduce((sum, row) => {
     const scheduleMonths = hmoScheduleMonths(row, hmoViewYear);
@@ -3328,13 +3346,13 @@ async function renderHmoCompanyTable(clients, overrides, tracker){
     const key = hmoClientKey(row);
     const paid = tracker.some(t => t.clientKey === key && t.year === hmoViewYear && t.monthIndex === m);
     if(!paid) return sum;
-    return sum + parseCurrency(row.premium) * rate;
+    return sum + parseCurrency(row.premium) * rateForRow(row);
   }, 0));
 
   const rows = sorted.map(row => {
     const key = hmoClientKey(row);
     const scheduleMonths = new Set(hmoScheduleMonths(row, hmoViewYear));
-    const amount = parseCurrency(row.premium) * rate;
+    const amount = parseCurrency(row.premium) * rateForRow(row);
     const monthCells = MONTHS.map((_, m) => {
       if(!scheduleMonths.has(m)) return `<td class="prufin-na">—</td>`;
       const paid = tracker.some(t => t.clientKey === key && t.year === hmoViewYear && t.monthIndex === m);
@@ -3343,6 +3361,7 @@ async function renderHmoCompanyTable(clients, overrides, tracker){
     return `<tr>
       <td style="text-align:left;"><span class="status-pill status-${(row.status || 'Active').replace(' ','\\ ')}">${escapeHtml(row.status || 'Active')}</span></td>
       <td style="text-align:left;">${escapeHtml(row.name || '')}</td>
+      ${isAll ? `<td style="text-align:left;">${escapeHtml(row.hmo || '')}</td>` : ''}
       <td style="text-align:left;">${escapeHtml(fmtIssuedDate(row.submitted || ''))}</td>
       <td style="text-align:left;">${escapeHtml(row.mode || '')}</td>
       <td style="text-align:left;">${escapeHtml(hmoScheduleLabel(row, hmoViewYear))}</td>
@@ -3350,24 +3369,27 @@ async function renderHmoCompanyTable(clients, overrides, tracker){
     </tr>`;
   }).join('');
 
+  const labelColspan = isAll ? 6 : 5;
   mount.innerHTML = `
-    <div class="rs-sub">Commission rate for ${escapeHtml(hmoActiveCompany)}: <strong>${prufinPct(rate)}</strong> of Premium per scheduled payment. Hover a checkbox to see its commission amount.</div>
+    ${rateNote}
+    ${toggleHtml}
     <div class="statistics-table-wrap">
       <table class="statistics-table prufin-tracker-table">
         <thead><tr>
           <th style="text-align:left;">Status</th>
           <th style="text-align:left;">Name of Client</th>
+          ${isAll ? `<th style="text-align:left;">HMO Company</th>` : ''}
           <th style="text-align:left;">Effectivity Date</th>
           <th style="text-align:left;">Mode</th>
           <th style="text-align:left;">Schedule of Payments</th>
           ${MONTHS.map(m => `<th>${m.slice(0,3)}</th>`).join('')}
         </tr>
         <tr class="prufin-tracker-totals-row">
-          <th colspan="5" style="text-align:left; font-weight:600;">Total Commission This Month</th>
+          <th colspan="${labelColspan}" style="text-align:left; font-weight:600;">Total Commission This Month</th>
           ${monthlyTotals.map(total => `<th class="num">${total ? fmtCurrency(total) : '—'}</th>`).join('')}
         </tr>
         <tr class="prufin-tracker-totals-row prufin-tracker-received-row">
-          <th colspan="5" style="text-align:left; font-weight:600;">Received Commission This Month</th>
+          <th colspan="${labelColspan}" style="text-align:left; font-weight:600;">Received Commission This Month</th>
           ${monthlyReceived.map(received => `<th class="num">${received ? fmtCurrency(received) : '—'}</th>`).join('')}
         </tr>
         </thead>
