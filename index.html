@@ -1276,7 +1276,6 @@ const GROUPS = [
     { id: "pru-leads", label: "PRU LEADS" },
     { id: "pru-servicing", label: "CLIENT SERVICING" },
     { id: "prufin", label: "PRUFINATED" },
-    { id: "whats-next", label: "WHAT'S NEXT" },
   ]},
   { id: "hmo", label: "HUSTLES", items: [
     { id: "hmo-clients", label: "ISSUED CLIENTS" },
@@ -1294,6 +1293,9 @@ const GROUPS = [
     { id: "site-assessment", label: "Assessment",      url: "https://insurancebyengrzeth.com/assessment" },
     { id: "site-booking",    label: "Booking",         url: "https://insurancebyengrzeth.com/booking" },
     { id: "site-hmoquote",   label: "HMO Quote",       url: "https://hmoquote.vercel.app/" },
+  ]},
+  { id: "whats-next-group", label: "WHAT'S NEXT", items: [
+    { id: "whats-next", label: "WHAT'S NEXT" },
   ]},
 ];
 
@@ -3103,7 +3105,7 @@ async function renderWhatsNextPanel(){
   if(!panel) return;
   const { record } = await whatsNextRecord();
   const day = whatsNextNormalizeDay(record.days[whatsNextSelectedDate]);
-  panel.innerHTML = `<div class="whats-next-panel"><button class="back-link" onclick="backToGrid()">← PRU</button><div class="whats-next-head"><div><h1>WHAT'S NEXT</h1><div class="sub">What matters today. What's next. What can wait.</div></div><div class="whats-next-today">Today · ${new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}</div></div>${whatsNextCalendar(record)}${whatsNextWorkspace(day, whatsNextSelectedDate)}</div>`;
+  panel.innerHTML = `<div class="whats-next-panel"><button class="back-link" onclick="backToGrid()">← WHAT'S NEXT</button><div class="whats-next-head"><div><h1>WHAT'S NEXT</h1><div class="sub">What matters today. What's next. What can wait.</div></div><div class="whats-next-today">Today · ${new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}</div></div>${whatsNextCalendar(record)}${whatsNextWorkspace(day, whatsNextSelectedDate)}</div>`;
 }
 async function whatsNextUpdateDay(dateKey, updater){
   const { record, records } = await whatsNextRecord();
