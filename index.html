@@ -1076,6 +1076,38 @@
   .prufin-cell-sub{font-size:10.5px; font-weight:500; color:var(--ink-soft); margin-top:2px;}
   .prufin-total-row{font-weight:700; background:var(--stripe);}
   .prufin-total-row:hover{background:var(--brass-soft);}
+  .prufin-highlight-box{
+    border:1px solid var(--navy);
+    border-radius:16px;
+    padding:22px 26px;
+    background:linear-gradient(135deg,var(--navy),var(--navy-soft) 220%);
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    margin-bottom:16px;
+  }
+  .prufin-highlight-box .phb-label{
+    font-size:12.5px;
+    font-weight:700;
+    color:#fff;
+    opacity:.8;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+  }
+  .prufin-highlight-box .phb-value{
+    font-family:'Inter', sans-serif;
+    font-weight:800;
+    font-size:34px;
+    color:#fff;
+    letter-spacing:-0.5px;
+    margin:6px 0 3px 0;
+  }
+  .prufin-highlight-box .phb-sub{
+    font-size:12px;
+    color:#fff;
+    opacity:.75;
+  }
+  .prufin-tracker-table select{padding:7px 9px; font-size:12.5px; border:1px solid var(--line); border-radius:8px; font-family:inherit; min-width:150px;}
   .statistics-bar-value{color:var(--navy); font-weight:700; white-space:nowrap;}
   .statistics-assessment{margin-top:28px; padding:20px 24px; border:1px solid var(--brass); border-radius:14px; background:linear-gradient(135deg,#fff,var(--brass-soft) 220%); color:var(--navy);}
   .statistics-assessment h2{margin:0 0 8px; font-size:17px;}
@@ -2627,12 +2659,23 @@ function closePrufinModal(){
 }
 
 /* ---- Actual Commissions — Payment Tracker ---- */
-async function togglePrufinPaid(clientKey, monthIndex, year, checked){
+/* Marks every scheduled payment for this client, in this year, up to and
+   including the chosen month as Paid, and un-marks anything after it —
+   so picking "Latest Premium Paid" from the dropdown is a single action
+   instead of checking off each month individually. selectValue === ''
+   means "Not paid yet" (clears all months for this client/year). */
+async function setPrufinLatestPaid(clientKey, year, selectValue){
+  if(!prufinLastEstimate) return;
+  const monthIndexes = prufinLastEstimate.paymentsFlat
+    .filter(p => p.clientKey === clientKey)
+    .map(p => p.monthIndex);
+  const selected = selectValue === '' ? -1 : Number(selectValue);
   const tracker = await getEntries('prufin-payment-tracker');
-  const idx = tracker.findIndex(t => t.clientKey === clientKey && t.monthIndex === monthIndex && t.year === year);
-  if(checked && idx < 0) tracker.push({ clientKey, monthIndex, year });
-  if(!checked && idx >= 0) tracker.splice(idx, 1);
-  await saveEntries('prufin-payment-tracker', tracker);
+  const filtered = tracker.filter(t => !(t.clientKey === clientKey && t.year === year));
+  monthIndexes.forEach(mi => {
+    if(mi <= selected) filtered.push({ clientKey, monthIndex: mi, year });
+  });
+  await saveEntries('prufin-payment-tracker', filtered);
   await renderPrufinActualSection();
 }
 async function renderPrufinActualSection(){
@@ -2651,9 +2694,12 @@ async function renderPrufinActualSection(){
   const paidSet = new Set(tracker.filter(t => t.year === prufinViewYear).map(t => t.clientKey + '|' + t.monthIndex));
   const manualEntries = await getEntries('prufin-manual-actuals');
   const manualForYear = manualEntries.filter(m => m.year === prufinViewYear);
+  const clients = await getEntries('pru-clients');
+  const issuedDateByKey = {};
+  clients.forEach(row => { issuedDateByKey[prufinClientKey(row)] = row.submitted || ''; });
 
   let actualGross = 0, actualNet = 0, estGross = 0, estNet = 0;
-  const byClient = {}; // clientKey -> { name, clientType, plan, mode, months:{monthIndex:{gross,net,rate,paid}} }
+  const byClient = {}; // clientKey -> { name, clientType, plan, mode, months:{monthIndex:{gross,net,paid}} }
   est.paymentsFlat.forEach(p => {
     estGross += p.gross; estNet += p.net;
     const paid = paidSet.has(p.clientKey + '|' + p.monthIndex);
@@ -2669,15 +2715,25 @@ async function renderPrufinActualSection(){
   actualNet += manualTotal * (1 - PRUFIN_TAX_RATE);
   const clientRows = Object.values(byClient).sort((a, b) => a.name.localeCompare(b.name));
   clientRows.forEach(c => {
-    const nets = Object.values(c.months).map(m => m.net);
-    c.refNet = nets.length ? nets.reduce((a, b) => a + b, 0) / nets.length : 0;
+    const monthEntries = Object.entries(c.months).map(([idx, m]) => ({ idx: Number(idx), ...m }));
+    c.grossTotal = monthEntries.reduce((a, m) => a + m.gross, 0);
+    c.netTotal = monthEntries.reduce((a, m) => a + m.net, 0);
+    const paidMonths = monthEntries.filter(m => m.paid).map(m => m.idx);
+    c.latestPaidIdx = paidMonths.length ? Math.max(...paidMonths) : -1;
+    c.issuedDate = issuedDateByKey[c.clientKey] || '';
   });
   prufinActualClientRows = clientRows; // cached for the client-detail popup
 
   const collectionRate = estGross ? (actualGross / estGross) * 100 : 0;
-  const summaryHtml = `
+  const filterLabel = prufinClientFilter === 'own' ? 'Own' : prufinClientFilter === 'adopted' ? 'Adopted' : 'All';
+
+  const highlightHtml = `
+    <div class="prufin-highlight-box">
+      <div class="phb-label">Est. Total Commissions to be Collected for ${prufinViewYear}</div>
+      <div class="phb-value">${fmtCurrency(estGross)}</div>
+      <div class="phb-sub">Net after 3% tax: ${fmtCurrency(estNet)} · ${filterLabel} clients</div>
+    </div>
     <div class="statistics-grid" style="margin-bottom:16px;">
-      <div class="statistics-card prufin-summary-card estimate"><h3>Estimated</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(estGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(estNet)}</div></div></div></div>
       <div class="statistics-card prufin-summary-card actual"><h3>Actual (Paid)</h3><div class="statistics-values"><div><div class="statistics-label">Gross</div><div class="statistics-value">${fmtCurrency(actualGross)}</div></div><div><div class="statistics-label">Net</div><div class="statistics-value">${fmtCurrency(actualNet)}</div></div></div>${manualTotal ? `<div class="statistics-note">Includes ${fmtCurrency(manualTotal)} from ${manualForYear.length} manual entr${manualForYear.length === 1 ? 'y' : 'ies'}</div>` : ''}</div>
       <div class="statistics-card"><h3>Collected</h3><div class="statistics-values"><div><div class="statistics-label">% of Estimated Gross</div><div class="statistics-value">${collectionRate.toFixed(1)}%</div></div></div></div>
     </div>
@@ -2688,29 +2744,36 @@ async function renderPrufinActualSection(){
         <table class="statistics-table prufin-tracker-table">
           <thead><tr>
             <th style="text-align:left;">Client</th>
-            <th style="text-align:left;">Type</th>
+            <th style="text-align:left;">Issued Date</th>
             <th style="text-align:left;">Plan</th>
+            <th style="text-align:left;">Type</th>
             <th style="text-align:left;">Mode</th>
-            <th>Net/Payment</th>
-            ${visibleIdx.map(i => `<th>${MONTHS[i].slice(0,3)}</th>`).join('')}
+            <th>Gross</th>
+            <th>Latest Premium Paid</th>
           </tr></thead>
-          <tbody>${clientRows.map(c => `
+          <tbody>${clientRows.map(c => {
+            const monthOptions = Object.keys(c.months).map(Number).sort((a, b) => a - b);
+            return `
             <tr>
               <td style="text-align:left;"><a href="javascript:void(0)" class="prufin-client-link" onclick="openPrufinClientModal('${prufinJsStr(c.clientKey)}')">${escapeHtml(c.name)}</a></td>
-              <td style="text-align:left;">${escapeHtml(c.clientType)}</td>
+              <td style="text-align:left;">${escapeHtml(fmtIssuedDate(c.issuedDate))}</td>
               <td style="text-align:left;">${escapeHtml(c.plan)}</td>
+              <td style="text-align:left;">${escapeHtml(c.clientType)}</td>
               <td style="text-align:left;">${escapeHtml(c.mode)}</td>
-              <td class="num">${fmtCurrency(c.refNet)}</td>
-              ${visibleIdx.map(i => c.months[i]
-                ? `<td class="num"><input type="checkbox" ${c.months[i].paid ? 'checked' : ''} onchange="togglePrufinPaid('${prufinJsStr(c.clientKey)}', ${i}, ${prufinViewYear}, this.checked)"></td>`
-                : `<td class="num prufin-na">—</td>`
-              ).join('')}
-            </tr>`).join('')}</tbody>
+              <td class="num">${fmtCurrency(c.grossTotal)}</td>
+              <td class="num">
+                <select onchange="setPrufinLatestPaid('${prufinJsStr(c.clientKey)}', ${prufinViewYear}, this.value)">
+                  <option value="" ${c.latestPaidIdx === -1 ? 'selected' : ''}>Not paid yet</option>
+                  ${monthOptions.map(i => `<option value="${i}" ${c.latestPaidIdx === i ? 'selected' : ''}>${MONTHS[i].slice(0,3)} ${prufinViewYear}</option>`).join('')}
+                </select>
+              </td>
+            </tr>`;
+          }).join('')}</tbody>
         </table>
       </div>`
     : `<div class="rs-sub">No expected payments for ${prufinViewYear} yet.</div>`;
 
-  mount.innerHTML = summaryHtml + tableHtml;
+  mount.innerHTML = highlightHtml + tableHtml;
 }
 
 let prufinActualClientRows = [];
