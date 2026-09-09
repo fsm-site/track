@@ -674,7 +674,7 @@
     justify-content:flex-start;
     padding:48px 4vw 48px 8vw;
     background:
-      linear-gradient(100deg, rgba(244,248,251,.95) 0%, rgba(244,248,251,.72) 30%, rgba(244,248,251,.18) 56%, rgba(244,248,251,0) 72%),
+      linear-gradient(100deg, rgba(244,248,251,.55) 0%, rgba(244,248,251,.22) 42%, rgba(244,248,251,0) 72%),
       var(--login-bg-image) center/cover no-repeat;
     background-color:var(--ivory);
   }
@@ -693,6 +693,7 @@
     padding:57px 51px 48px;
     box-shadow:0 30px 70px rgba(18,48,73,.2);
     animation:loginSwipeIn 2.1s cubic-bezier(.16,.84,.44,1) both;
+    font-size:17px;
   }
   .login-welcome{
     position:static;
@@ -718,25 +719,28 @@
     from{ transform:translateY(-70px); opacity:0; }
     to{ transform:translateY(0); opacity:1; }
   }
-  .login-box label{ margin-top:12px; }
+  .login-box label{ margin-top:18px; font-size:18px; }
   .login-box label:first-of-type{ margin-top:0; }
   .login-box input[type="email"], .login-box input[type="password"]{
     border-radius:14px;
     border:1px solid var(--line);
     background:#fff;
+    font-size:17px;
+    padding:12px 14px;
   }
   .login-error{
-    font-size:12.5px;
+    font-size:15px;
     color:var(--red);
     min-height:16px;
     margin-top:10px;
   }
   .login-box button.primary{
     display:block;
-    width:60%;
+    width:42%;
     text-align:center;
     margin:24px auto 0;
-    padding:18px 24px;
+    padding:12px 20px;
+    font-size:17px;
     border-radius:999px;
     background:linear-gradient(120deg, var(--brass), var(--navy));
     font-weight:700;
@@ -747,13 +751,13 @@
     #login-screen{ justify-content:center; padding:28px 4vw; }
     #login-screen{
       background:
-        linear-gradient(180deg, rgba(244,248,251,.55) 0%, rgba(244,248,251,.92) 62%, rgba(244,248,251,.98) 100%),
+        linear-gradient(180deg, rgba(244,248,251,.25) 0%, rgba(244,248,251,.72) 62%, rgba(244,248,251,.9) 100%),
         var(--login-bg-image) center 18%/cover no-repeat;
     }
     .login-card-wrap{ max-width:100%; }
     .login-box{ border-radius:18px; padding:21px 14px 18px; }
     .login-welcome{ font-size:132px; white-space:normal; }
-    .login-box button.primary{ width:80%; padding:9px 12px; margin-top:14px; }
+    .login-box button.primary{ width:65%; padding:10px 12px; margin-top:14px; }
   }
   .signout-link{
     all:unset;
@@ -1077,7 +1081,6 @@
     <div id="leaf-mount"></div>
     <div id="statistics-mount" class="statistics-view"></div>
     <div id="prufin-statistics-mount" class="statistics-view"></div>
-    <footer class="app-footer"><button type="button" onclick="openStatistics()">Statistics</button></footer>
   </main>
 </div>
 <div class="trash-modal" id="trash-modal" role="dialog" aria-modal="true" aria-labelledby="trash-title">
