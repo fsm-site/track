@@ -2026,7 +2026,6 @@ function buildTablePanel(item, groupLabel, config){
           </select>
         </label>` : ''}
         ${item.id === 'pru-clients' ? `<button class="toggle-pill-btn" id="${item.id}-toggle-clients" style="margin-bottom:0;" onclick="toggleIssuedClientsVisible()">Show Clients</button>` : ''}
-        <button class="clear-link" onclick="clearEntries('${item.id}')">Clear all</button>
       </div>
     </div>
     <div id="${item.id}-list"></div>
