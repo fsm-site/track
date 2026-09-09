@@ -2661,6 +2661,7 @@ async function addPrufinManualActual(){
   if(note) note.textContent = ok ? 'Added.' : 'Could not save — please try again.';
   await renderPrufinEstimateSection();
   await renderPrufinActualSection();
+  await renderMoneyIncomePanel();
 }
 async function removePrufinManualActual(id){
   const entries = await getEntries('prufin-manual-actuals');
@@ -2668,6 +2669,7 @@ async function removePrufinManualActual(id){
   await saveEntries('prufin-manual-actuals', filtered);
   await renderPrufinEstimateSection();
   await renderPrufinActualSection();
+  await renderMoneyIncomePanel();
 }
 
 function openPrufinBatchModal(batchKey){
@@ -2756,6 +2758,7 @@ async function setPrufinLatestPaid(clientKey, year, selectValue){
 
   await saveEntries('prufin-payment-tracker', filtered);
   await renderPrufinActualSection();
+  await renderMoneyIncomePanel();
 }
 async function renderPrufinActualSection(){
   const mount = document.getElementById('prufin-actual-mount');
@@ -3415,6 +3418,230 @@ async function renderHmoCommissionsPanel(){
 
   await renderHmoHighlights(clients, overrides, tracker);
   await renderHmoCompanyTable(clients, overrides, tracker);
+  await renderMoneyIncomePanel();
+}
+
+/* ==================== MONEY MATTERS — Sources of Income ====================
+   Pulls the "actual" money already tracked elsewhere — PRUFINATED's Actual
+   Commissions (payment tracker + manual entries) and HUSTLES' received HMO
+   commissions — into one combined monthly view, then lets other business
+   income be logged by hand (money-other-income) so every source of income
+   rolls up into a single Total Monthly Income figure. */
+let moneyIncomeViewYear = Math.min(Math.max(new Date().getFullYear(), PRUFIN_RATE_YEARS[0]), PRUFIN_RATE_YEARS[PRUFIN_RATE_YEARS.length - 1]);
+
+function buildMoneyIncomePanel(item, groupLabel){
+  const el = document.createElement('div');
+  el.className = 'leaf-view';
+  el.id = 'leaf-' + item.id;
+  el.innerHTML = `
+    <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
+    <h1>${item.label}</h1>
+    <div class="sub">${groupLabel} · PRU (Prufinated Actual) + Hustles (Commissions), combined into a Total Monthly Income</div>
+
+    <div class="rewards-section">
+      <label class="prufin-controls-label">Year
+        <select id="money-income-year-select" onchange="onMoneyIncomeYearChange()">
+          ${PRUFIN_RATE_YEARS.map(y => `<option value="${y}" ${y === moneyIncomeViewYear ? 'selected' : ''}>${y}</option>`).join('')}
+        </select>
+      </label>
+    </div>
+
+    <div id="money-income-highlights"></div>
+    <div id="money-income-table-mount"></div>
+
+    <div class="rewards-section">
+      <h2>Other Business Income</h2>
+      <div class="rs-sub">Add new data from any other business — it's added into the Other column and the Total Monthly Income above.</div>
+      <div class="prufin-manual-form">
+        <label>Business / Source
+          <input type="text" id="money-income-source" placeholder="e.g. Online Shop">
+        </label>
+        <label>Month
+          <select id="money-income-month">
+            ${MONTHS.map((m, i) => `<option value="${i}">${m}</option>`).join('')}
+          </select>
+        </label>
+        <label>Amount
+          <input type="number" id="money-income-amount" placeholder="e.g. 5000" step="0.01">
+        </label>
+        <button class="primary" onclick="addMoneyOtherIncome()">+ Add New Business Income</button>
+      </div>
+      <div class="save-note" id="money-income-savenote"></div>
+      <div id="money-income-other-list"></div>
+    </div>
+  `;
+  return el;
+}
+
+async function onMoneyIncomeYearChange(){
+  const select = document.getElementById('money-income-year-select');
+  if(select) moneyIncomeViewYear = Number(select.value);
+  await renderMoneyIncomePanel();
+}
+
+/* Actual PRUFINATED commission collected per calendar month of `year`:
+   every scheduled payment marked Paid in the tracker, plus any manually
+   entered commission for a month with no matching Issued-client payment. */
+async function computePrufinActualByMonth(year){
+  const clients = await getEntries('pru-clients');
+  const overrides = await getEntries('prufin-rate-overrides');
+  const est = computePrufinEstimate(clients, overrides, year, 'all');
+  const tracker = await getEntries('prufin-payment-tracker');
+  const paidSet = new Set(tracker.filter(t => t.year === year).map(t => t.clientKey + '|' + t.monthIndex));
+  const byMonth = Array(12).fill(0);
+  est.paymentsFlat.forEach(p => {
+    if(paidSet.has(p.clientKey + '|' + p.monthIndex)) byMonth[p.monthIndex] += p.gross;
+  });
+  const manualEntries = await getEntries('prufin-manual-actuals');
+  manualEntries.filter(m => m.year === year).forEach(m => { byMonth[m.monthIndex] += m.amount; });
+  return byMonth;
+}
+
+/* Actual HUSTLES (HMO) commission received per calendar month of `year`:
+   every scheduled payment, across every company, checked off in the
+   Commissions payment tracker. */
+async function computeHmoReceivedByMonth(year){
+  const clients = await getEntries('hmo-clients');
+  const overrides = await getEntries('hmo-rate-overrides');
+  const tracker = await getEntries('hmo-payment-tracker');
+  const byMonth = Array(12).fill(0);
+  clients.forEach(row => {
+    const rate = hmoRateFor(overrides, row.hmo);
+    const amount = parseCurrency(row.premium) * rate;
+    const key = hmoClientKey(row);
+    hmoScheduleMonths(row, year).forEach(m => {
+      const paid = tracker.some(t => t.clientKey === key && t.year === year && t.monthIndex === m);
+      if(paid) byMonth[m] += amount;
+    });
+  });
+  return byMonth;
+}
+
+async function renderMoneyIncomePanel(){
+  const yearSelect = document.getElementById('money-income-year-select');
+  if(!yearSelect) return; // panel isn't mounted / visited yet
+  yearSelect.value = moneyIncomeViewYear;
+
+  const [pruByMonth, hustlesByMonth, otherEntriesAll] = await Promise.all([
+    computePrufinActualByMonth(moneyIncomeViewYear),
+    computeHmoReceivedByMonth(moneyIncomeViewYear),
+    getEntries('money-other-income'),
+  ]);
+  const otherEntries = otherEntriesAll.filter(o => o.year === moneyIncomeViewYear);
+  const otherByMonth = Array(12).fill(0);
+  otherEntries.forEach(o => { otherByMonth[o.monthIndex] += o.amount; });
+  const totalByMonth = MONTHS.map((_, i) => pruByMonth[i] + hustlesByMonth[i] + otherByMonth[i]);
+  const sum = arr => arr.reduce((a, b) => a + b, 0);
+  const pruTotal = sum(pruByMonth), hustlesTotal = sum(hustlesByMonth), otherTotal = sum(otherByMonth), grandTotal = sum(totalByMonth);
+
+  const highlights = document.getElementById('money-income-highlights');
+  if(highlights){
+    highlights.innerHTML = `
+      <div class="prufin-highlight-grid">
+        <div class="prufin-highlight-box">
+          <div class="phb-label">PRU — Prufinated Actual</div>
+          <div class="phb-value">${fmtCurrency(pruTotal)}</div>
+        </div>
+        <div class="prufin-highlight-box">
+          <div class="phb-label">Hustles — Commissions</div>
+          <div class="phb-value">${fmtCurrency(hustlesTotal)}</div>
+        </div>
+        <div class="prufin-highlight-box">
+          <div class="phb-label">Other Business Income</div>
+          <div class="phb-value">${fmtCurrency(otherTotal)}</div>
+        </div>
+        <div class="prufin-highlight-box">
+          <div class="phb-label">Total Income — ${moneyIncomeViewYear}</div>
+          <div class="phb-value">${fmtCurrency(grandTotal)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  const tableMount = document.getElementById('money-income-table-mount');
+  if(tableMount){
+    tableMount.innerHTML = `
+      <div class="statistics-table-wrap">
+        <table class="statistics-table">
+          <thead><tr>
+            <th style="text-align:left;">Month</th>
+            <th>PRU</th>
+            <th>Hustles</th>
+            <th>Other</th>
+            <th>Total Monthly Income</th>
+          </tr></thead>
+          <tbody>
+            ${MONTHS.map((m, i) => `
+              <tr>
+                <td style="text-align:left;">${m}</td>
+                <td class="num">${fmtCurrency(pruByMonth[i])}</td>
+                <td class="num">${fmtCurrency(hustlesByMonth[i])}</td>
+                <td class="num">${fmtCurrency(otherByMonth[i])}</td>
+                <td class="num" style="font-weight:700;">${fmtCurrency(totalByMonth[i])}</td>
+              </tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td style="text-align:left; font-weight:700;">Total</td>
+              <td class="num" style="font-weight:700;">${fmtCurrency(pruTotal)}</td>
+              <td class="num" style="font-weight:700;">${fmtCurrency(hustlesTotal)}</td>
+              <td class="num" style="font-weight:700;">${fmtCurrency(otherTotal)}</td>
+              <td class="num" style="font-weight:700;">${fmtCurrency(grandTotal)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
+  }
+
+  const otherList = document.getElementById('money-income-other-list');
+  if(otherList){
+    otherList.innerHTML = otherEntries.length
+      ? `<div class="statistics-table-wrap" style="margin-top:10px;">
+          <table class="statistics-table">
+            <thead><tr><th style="text-align:left;">Source</th><th style="text-align:left;">Month</th><th>Amount</th><th></th></tr></thead>
+            <tbody>${otherEntries.slice().sort((a, b) => a.monthIndex - b.monthIndex).map(o => `
+              <tr>
+                <td style="text-align:left;">${escapeHtml(o.source)}</td>
+                <td style="text-align:left;">${MONTHS[o.monthIndex]}</td>
+                <td class="num">${fmtCurrency(o.amount)}</td>
+                <td class="num"><button class="clear-link" onclick="removeMoneyOtherIncome('${o.id}')">Remove</button></td>
+              </tr>`).join('')}</tbody>
+          </table>
+        </div>`
+      : `<div class="rs-sub">No other business income logged for ${moneyIncomeViewYear} yet.</div>`;
+  }
+}
+
+async function addMoneyOtherIncome(){
+  const sourceInput = document.getElementById('money-income-source');
+  const monthSelect = document.getElementById('money-income-month');
+  const amountInput = document.getElementById('money-income-amount');
+  const note = document.getElementById('money-income-savenote');
+  const source = sourceInput.value.trim();
+  const amount = parseFloat(amountInput.value);
+  if(!source || isNaN(amount) || amount <= 0){
+    if(note) note.textContent = 'Enter a business/source name and a valid amount.';
+    return;
+  }
+  const entries = await getEntries('money-other-income');
+  entries.push({
+    id: 'm' + Date.now() + Math.random().toString(36).slice(2, 7),
+    year: moneyIncomeViewYear,
+    monthIndex: Number(monthSelect.value),
+    source,
+    amount,
+  });
+  const ok = await saveEntries('money-other-income', entries);
+  if(note) note.textContent = ok ? 'Added.' : 'Could not save — please try again.';
+  if(ok){ sourceInput.value = ''; amountInput.value = ''; }
+  await renderMoneyIncomePanel();
+}
+async function removeMoneyOtherIncome(id){
+  const entries = await getEntries('money-other-income');
+  const filtered = entries.filter(o => o.id !== id);
+  await saveEntries('money-other-income', filtered);
+  await renderMoneyIncomePanel();
 }
 
 /* -- live countdown to Jan 1, 2027, shown at the top of Rewards & Achievements -- */
@@ -3635,6 +3862,8 @@ GROUPS.forEach(g => {
       panel = buildPrufinPanel(item, g.label);
     }else if(item.id === 'hmo-commissions'){
       panel = buildHmoCommissionsPanel(item, g.label);
+    }else if(item.id === 'money-income'){
+      panel = buildMoneyIncomePanel(item, g.label);
     }else if(item.id === 'whats-next'){
       panel = document.createElement('div');
       panel.className = 'leaf-view';
@@ -3840,6 +4069,7 @@ async function renderList(id){
   if(id === 'pru-servicing') return renderServicingTable(id);
   if(id === 'prufin') return renderPrufinPanel();
   if(id === 'hmo-commissions') return renderHmoCommissionsPanel();
+  if(id === 'money-income') return renderMoneyIncomePanel();
   if(TABLE_LEAVES[id] && TABLE_LEAVES[id].lead){
     return renderLeadTable(id);
   }
@@ -4312,6 +4542,7 @@ async function renderTable(id){
       listEl.innerHTML = `<div class="rs-sub">Client list is hidden. Click "Show Clients" above to view the table.</div>`;
       await renderGroupCount(idToGroup(id));
       await renderRewardsPanel(); await renderPrufinPanel(); if(prufinStatsOpen) await renderPrufinStatisticsPanel();
+      await renderMoneyIncomePanel();
       return;
     }
   }
@@ -4321,6 +4552,7 @@ async function renderTable(id){
     await renderGroupCount(idToGroup(id));
     if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); if(prufinStatsOpen) await renderPrufinStatisticsPanel(); }
     if(id === 'hmo-clients'){ await renderHmoCommissionsPanel(); }
+    if(id === 'pru-clients' || id === 'hmo-clients'){ await renderMoneyIncomePanel(); }
     return;
   }
 
@@ -4396,6 +4628,7 @@ async function renderTable(id){
   await renderGroupCount(idToGroup(id));
   if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); if(prufinStatsOpen) await renderPrufinStatisticsPanel(); }
   if(id === 'hmo-clients'){ await renderHmoCommissionsPanel(); }
+  if(id === 'pru-clients' || id === 'hmo-clients'){ await renderMoneyIncomePanel(); }
 }
 
 function idToGroup(leafId){
@@ -4787,6 +5020,8 @@ window.initApp = async function initApp(){
   await renderAllCounts();
   await renderRewardsPanel();
   await renderPrufinPanel();
+  await renderHmoCommissionsPanel();
+  await renderMoneyIncomePanel();
   if(statisticsOpen) await renderStatisticsPanel();
   if(prufinStatsOpen) await renderPrufinStatisticsPanel();
 };
