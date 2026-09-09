@@ -2027,35 +2027,8 @@ function buildServicingPanel(item, groupLabel){
   el.innerHTML = `
     <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
     <h1>${item.label}</h1>
-    <div class="sub">${groupLabel} · manage issued clients</div>
-    <div class="table-form">
-      <div class="fields">
-        <div><label>Client Name</label><input id="${item.id}-f-name" type="text" placeholder="Last, First"></div>
-          <div><label>Policy Number</label><input id="${item.id}-f-policyNumber" type="text" placeholder="Last, First"></div>
-        <div><label>Issued Date</label><input id="${item.id}-f-issuedDate" type="date"></div>
-        <div><label>Client Type</label><select id="${item.id}-f-servicingType"><option value="Own">Own</option><option value="Adopted">Adopted</option></select></div>
-        <div><label>Contact Link</label><input id="${item.id}-f-contactLink" type="url" placeholder="https://..."></div>
-        <div class="full"><label>Notes</label><textarea id="${item.id}-f-notes" placeholder="Client servicing notes"></textarea></div>
-      </div>
-      <div class="form-actions"><button class="clear-link" id="${item.id}-cancel" style="display:none; margin-right:auto;" onclick="cancelServicingEdit('${item.id}')">Cancel edit</button><button class="primary" id="${item.id}-submit" onclick="addServicingEntry('${item.id}')">Add client</button></div>
-    </div>
+    <div class="sub">${groupLabel} · policy booklet & review tracker for your Own clients</div>
     <div class="save-note" id="${item.id}-savenote"></div>
-    <div class="lead-view-tabs" role="tablist" aria-label="Client servicing views">
-      <button class="lead-view-tab active" id="${item.id}-tab-all" onclick="setServicingView('${item.id}','all')">All</button>
-      <button class="lead-view-tab" id="${item.id}-tab-own" onclick="setServicingView('${item.id}','Own')">Own</button>
-      <button class="lead-view-tab" id="${item.id}-tab-adopted" onclick="setServicingView('${item.id}','Adopted')">Adopted</button>
-    </div>
-    <div class="list-head"><div style="display:flex; align-items:center; gap:14px;">
-      <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">Sort by
-        <select id="${item.id}-sort" onchange="setServicingSort('${item.id}', this.value)" style="width:auto; padding:6px 8px; font-size:12.5px;">
-          <option value="date-asc">Issued date</option><option value="name-asc">Client name</option><option value="status-issued">Issued only</option><option value="status-lapsed">Lapsed only</option>
-        </select>
-      </label>
-      <label style="font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; margin:0;">Search
-        <input id="${item.id}-search" type="search" placeholder="Name or keyword" onkeydown="if(event.key === 'Enter') setSearch('${item.id}')" style="width:150px; padding:6px 8px; font-size:12.5px;">
-        <button class="primary" onclick="setSearch('${item.id}')" style="padding:6px 10px; font-size:12px;">Search</button>
-      </label>
-    </div></div>
     <div id="${item.id}-list"></div>`;
   return el;
 }
@@ -3456,8 +3429,6 @@ function buildSortOptions(config, id){
 
 const leadSortState = {};
 const leadViewState = {};
-const servicingViewState = {};
-const servicingSortState = {};
 function setLeadView(id, view){
   leadViewState[id] = view;
   document.getElementById(id + '-tab-all')?.classList.toggle('active', view === 'all');
@@ -3557,75 +3528,64 @@ async function renderLeadTable(id){
   await renderGroupCount(idToGroup(id));
 }
 
-function setServicingView(id, view){
-  servicingViewState[id] = view;
-  ['all','own','adopted'].forEach(key => document.getElementById(id + '-tab-' + key)?.classList.toggle('active', view.toLowerCase() === key));
-  renderServicingTable(id);
-}
+const SERVICING_BOOKLET_OPTIONS = ["Not Yet Requested","Requested","Delivered"];
+const SERVICING_REVIEW_OPTIONS = ["Not Yet","Scheduled","Done"];
+
 async function renderServicingTable(id){
   const entries = await getEntries(id);
-  const view = servicingViewState[id] || 'all';
-  const viewEntries = view === 'all' ? entries : entries.filter(row => (row.servicingType || 'Own') === view);
-  const sortMode = servicingSortState[id] || 'date-asc';
-  const statusFiltered = sortMode === 'status-issued'
-    ? viewEntries.filter(row => !row.status || String(row.status).toLowerCase() === 'issued')
-    : sortMode === 'status-lapsed'
-      ? viewEntries.filter(row => String(row.status || '').toLowerCase() === 'lapsed')
-      : viewEntries;
-  const query = searchState[id] || '';
-  const visible = (query
-    ? statusFiltered.filter(row => Object.values(row).some(value => String(value ?? '').toLowerCase().includes(query)))
-    : statusFiltered).sort((a, b) => {
-      if(sortMode === 'name-asc') return (a.name || '').localeCompare(b.name || '');
-      return (a.issuedDate || a.submitted || '').localeCompare(b.issuedDate || b.submitted || '');
-    });
+  const ownEntries = entries.filter(row => (row.servicingType || 'Own') === 'Own');
+  const sorted = ownEntries.slice().sort((a, b) =>
+    (a.issuedDate || a.submitted || '').localeCompare(b.issuedDate || b.submitted || '')
+  );
   const listEl = document.getElementById(id + '-list');
-  const bcount = document.getElementById('bcount-' + id);
-  if(bcount) bcount.textContent = entries.length;
-  const sortSelect = document.getElementById(id + '-sort');
-  if(sortSelect) sortSelect.value = sortMode;
-  listEl.innerHTML = visible.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Client Name</th><th>Issued Date</th><th>Type</th><th>Plan</th><th>Mode</th><th>Status</th><th>Contact Link</th><th>Notes</th><th></th></tr></thead><tbody>${visible.map(row => {
-    const idx = entries.indexOf(row);
-    return `<tr><td>${escapeHtml(row.name || '')}</td><td>${escapeHtml(fmtIssuedDate(row.issuedDate || row.submitted || ''))}</td><td>${escapeHtml(row.servicingType || 'Own')}</td><td>${escapeHtml(row.plan || '')}</td><td>${escapeHtml(row.mode || '')}</td><td><span class="status-pill status-${(row.status || 'Issued').replace(' ','\\ ')}">${escapeHtml(row.status || 'Issued')}</span></td><td>${contactHref(row.contactLink) ? `<a class="contact-link" href="${escapeHtml(contactHref(row.contactLink))}" target="_blank" rel="noopener">Open Link</a>` : ''}</td><td>${escapeHtml(row.notes || '')}</td><td><button class="row-del" onclick="editServicingEntry('${id}', ${idx})">Edit</button>&nbsp;&nbsp;<button class="row-del" onclick="deleteEntry('${id}', ${idx})">Remove</button></td></tr>`;
-  }).join('')}</tbody></table></div>` : '<div class="empty">No clients in this view yet.</div>';
+  if(!listEl) return;
+
+  listEl.innerHTML = sorted.length
+    ? `
+      <div class="rewards-section">
+        <h2 class="prufin-section-title actual">📋 Owned Clients — Servicing Checklist</h2>
+        <div class="rs-sub">Policy booklet status, policy review, and email updates for your Own clients. Changes save automatically.</div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr>
+              <th>Name of Client</th>
+              <th>Date Issued</th>
+              <th>Status of Policy Booklet</th>
+              <th>Policy Review</th>
+              <th>Email Updated</th>
+            </tr></thead>
+            <tbody>${sorted.map(row => {
+              const idx = entries.indexOf(row);
+              return `<tr>
+                <td>${escapeHtml(row.name || '')}</td>
+                <td>${escapeHtml(fmtIssuedDate(row.issuedDate || row.submitted || ''))}</td>
+                <td><select onchange="updateServicingField('${id}', ${idx}, 'policyBooklet', this.value)">
+                  ${SERVICING_BOOKLET_OPTIONS.map(opt => `<option value="${opt}" ${(row.policyBooklet || SERVICING_BOOKLET_OPTIONS[0]) === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                </select></td>
+                <td><select onchange="updateServicingField('${id}', ${idx}, 'policyReview', this.value)">
+                  ${SERVICING_REVIEW_OPTIONS.map(opt => `<option value="${opt}" ${(row.policyReview || SERVICING_REVIEW_OPTIONS[0]) === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                </select></td>
+                <td style="text-align:center;"><input type="checkbox" ${row.emailUpdated ? 'checked' : ''} onchange="updateServicingField('${id}', ${idx}, 'emailUpdated', this.checked)"></td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+    `
+    : '<div class="empty">No Own clients yet. Clients marked "Own" under Issued Clients will sync here automatically.</div>';
   await renderGroupCount(idToGroup(id));
 }
-function setServicingSort(id, value){
-  servicingSortState[id] = value;
-  renderServicingTable(id);
-}
-async function addServicingEntry(id){
+
+async function updateServicingField(id, idx, field, value){
   const entries = await getEntries(id);
-  const editing = editState[id];
-  const row = {
-    name: document.getElementById(id + '-f-name').value.trim(),
-    issuedDate: document.getElementById(id + '-f-issuedDate').value,
-    servicingType: document.getElementById(id + '-f-servicingType').value,
-    contactLink: document.getElementById(id + '-f-contactLink').value.trim(),
-    notes: document.getElementById(id + '-f-notes').value.trim()
-  };
-  if(!row.name) return;
-  if(editing != null && entries[editing]) entries[editing] = { ...entries[editing], ...row };
-  else { row.ts = Date.now(); entries.push(row); }
-  if(await saveEntries(id, entries)){
-    ['name','issuedDate','contactLink','notes'].forEach(key => { document.getElementById(id + '-f-' + key).value = ''; });
-    clearEditMode(id, 'Add client');
+  if(!entries[idx]) return;
+  entries[idx] = { ...entries[idx], [field]: value };
+  const ok = await saveEntries(id, entries);
+  const note = document.getElementById(id + '-savenote');
+  if(note){
+    note.textContent = ok ? 'Saved.' : 'Could not save — please try again.';
+    setTimeout(() => { if(note.textContent === 'Saved.') note.textContent = ''; }, 1500);
   }
-  await refreshAfterClientChange(id);
-}
-async function editServicingEntry(id, idx){
-  const row = (await getEntries(id))[idx];
-  if(!row) return;
-  document.getElementById(id + '-f-name').value = row.name || '';
-  document.getElementById(id + '-f-issuedDate').value = row.issuedDate || row.submitted || '';
-  document.getElementById(id + '-f-servicingType').value = row.servicingType || 'Own';
-  document.getElementById(id + '-f-contactLink').value = row.contactLink || '';
-  document.getElementById(id + '-f-notes').value = row.notes || '';
-  setEditMode(id, idx, 'Save changes');
-}
-function cancelServicingEdit(id){
-  ['name','issuedDate','contactLink','notes'].forEach(key => { document.getElementById(id + '-f-' + key).value = ''; });
-  clearEditMode(id, 'Add client');
 }
 
 function leadFieldValue(id, col){
