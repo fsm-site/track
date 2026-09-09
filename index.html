@@ -2663,7 +2663,12 @@ function closePrufinModal(){
    including the chosen month as Paid, and un-marks anything after it —
    so picking "Latest Premium Paid" from the dropdown is a single action
    instead of checking off each month individually. selectValue === ''
-   means "Not paid yet" (clears all months for this client/year). */
+   means "Not paid yet" (clears all months for this client/year).
+   Whenever a month is actually chosen, every earlier calendar year for
+   this client (back to their issued year) is also filled in as fully
+   paid — being current as of, say, August 2026 necessarily means 2022
+   through 2025 are already settled, and leaving those years showing
+   gaps would just be confusing when someone flips back to check them. */
 async function setPrufinLatestPaid(clientKey, year, selectValue){
   if(!prufinLastEstimate) return;
   const monthIndexes = prufinLastEstimate.paymentsFlat
@@ -2675,6 +2680,24 @@ async function setPrufinLatestPaid(clientKey, year, selectValue){
   monthIndexes.forEach(mi => {
     if(mi <= selected) filtered.push({ clientKey, monthIndex: mi, year });
   });
+
+  if(selected >= 0){
+    const clients = await getEntries('pru-clients');
+    const row = clients.find(r => prufinClientKey(r) === clientKey);
+    if(row){
+      const overrides = await getEntries('prufin-rate-overrides');
+      const issuedDate = submittedDateFromMonth(row.submitted, year);
+      const startYear = issuedDate ? Math.max(issuedDate.getFullYear(), PRUFIN_RATE_YEARS[0]) : PRUFIN_RATE_YEARS[0];
+      for(let y = startYear; y < year; y++){
+        const pastEst = computePrufinEstimate([row], overrides, y, 'all');
+        pastEst.paymentsFlat.forEach(p => {
+          const exists = filtered.some(t => t.clientKey === clientKey && t.year === y && t.monthIndex === p.monthIndex);
+          if(!exists) filtered.push({ clientKey, monthIndex: p.monthIndex, year: y });
+        });
+      }
+    }
+  }
+
   await saveEntries('prufin-payment-tracker', filtered);
   await renderPrufinActualSection();
 }
@@ -2721,6 +2744,17 @@ async function renderPrufinActualSection(){
     const paidMonths = monthEntries.filter(m => m.paid).map(m => m.idx);
     c.latestPaidIdx = paidMonths.length ? Math.max(...paidMonths) : -1;
     c.issuedDate = issuedDateByKey[c.clientKey] || '';
+    // If nothing's marked paid yet in the year being viewed, look back at
+    // earlier years so the dropdown can show where they actually left off
+    // (e.g. "last paid Dec 2025") instead of implying they've never paid.
+    if(c.latestPaidIdx === -1){
+      const priorEntries = tracker.filter(t => t.clientKey === c.clientKey && t.year < prufinViewYear);
+      if(priorEntries.length){
+        const maxYear = Math.max(...priorEntries.map(t => t.year));
+        const maxMonth = Math.max(...priorEntries.filter(t => t.year === maxYear).map(t => t.monthIndex));
+        c.priorPaidLabel = `${MONTHS[maxMonth].slice(0,3)} ${maxYear}`;
+      }
+    }
   });
   prufinActualClientRows = clientRows; // cached for the client-detail popup
 
@@ -2763,9 +2797,10 @@ async function renderPrufinActualSection(){
               <td class="num">${fmtCurrency(c.grossTotal)}</td>
               <td class="num">
                 <select onchange="setPrufinLatestPaid('${prufinJsStr(c.clientKey)}', ${prufinViewYear}, this.value)">
-                  <option value="" ${c.latestPaidIdx === -1 ? 'selected' : ''}>Not paid yet</option>
+                  <option value="" ${c.latestPaidIdx === -1 ? 'selected' : ''}>Not paid yet${c.priorPaidLabel ? ` (last paid ${c.priorPaidLabel})` : ''}</option>
                   ${monthOptions.map(i => `<option value="${i}" ${c.latestPaidIdx === i ? 'selected' : ''}>${MONTHS[i].slice(0,3)} ${prufinViewYear}</option>`).join('')}
                 </select>
+                ${c.priorPaidLabel ? `<div class="prufin-cell-sub">Last paid: ${c.priorPaidLabel}</div>` : ''}
               </td>
             </tr>`;
           }).join('')}</tbody>
