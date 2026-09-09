@@ -1081,6 +1081,7 @@
   .prufin-tracker-table td.prufin-na{color:var(--ink-soft); opacity:.5;}
   .prufin-tracker-table th{white-space:nowrap;}
   .prufin-tracker-totals-row th{background:var(--brass-soft); color:var(--brass-dark); text-transform:none; font-size:12px; white-space:nowrap;}
+  .prufin-tracker-received-row th{background:#DEEBDD; color:#3A6B44;}
   .prufin-clickable-row{cursor:pointer;}
   .prufin-clickable-row:hover{background:var(--brass-soft);}
   .prufin-cell-sub{font-size:10.5px; font-weight:500; color:var(--ink-soft); margin-top:2px;}
@@ -3321,6 +3322,14 @@ async function renderHmoCompanyTable(clients, overrides, tracker){
     if(!scheduleMonths.includes(m)) return sum;
     return sum + parseCurrency(row.premium) * rate;
   }, 0));
+  const monthlyReceived = MONTHS.map((_, m) => sorted.reduce((sum, row) => {
+    const scheduleMonths = hmoScheduleMonths(row, hmoViewYear);
+    if(!scheduleMonths.includes(m)) return sum;
+    const key = hmoClientKey(row);
+    const paid = tracker.some(t => t.clientKey === key && t.year === hmoViewYear && t.monthIndex === m);
+    if(!paid) return sum;
+    return sum + parseCurrency(row.premium) * rate;
+  }, 0));
 
   const rows = sorted.map(row => {
     const key = hmoClientKey(row);
@@ -3356,6 +3365,10 @@ async function renderHmoCompanyTable(clients, overrides, tracker){
         <tr class="prufin-tracker-totals-row">
           <th colspan="5" style="text-align:left; font-weight:600;">Total Commission This Month</th>
           ${monthlyTotals.map(total => `<th class="num">${total ? fmtCurrency(total) : '—'}</th>`).join('')}
+        </tr>
+        <tr class="prufin-tracker-totals-row prufin-tracker-received-row">
+          <th colspan="5" style="text-align:left; font-weight:600;">Received Commission This Month</th>
+          ${monthlyReceived.map(received => `<th class="num">${received ? fmtCurrency(received) : '—'}</th>`).join('')}
         </tr>
         </thead>
         <tbody>${rows}</tbody>
