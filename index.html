@@ -516,6 +516,8 @@
   .status-Pending{ background:#F6E9CE; color:#8F6A2E; }
   .status-In\ Process{ background:#E1E6F0; color:#3F5480; }
   .status-Declined{ background:#F4DBD5; color:#A54936; }
+  .status-Active{ background:#DEEBDD; color:#3A6B44; }
+  .status-Inactive{ background:#F4DBD5; color:#A54936; }
 
   .table-form{
     border:1px solid var(--line);
@@ -1354,6 +1356,14 @@ const LEAD_SOURCES = ["FB","IG","Tiktok","FB Ads","Referral","B2B/Flyering"];
 const LEAD_STATUSES = ["Messaged","Inquired","Prospect","Appointment Set","Quote Sent","App Submitted","Issued"];
 const LEAD_NEEDS = ["Life Insurance","Health Insurance","Investments","Guaranteed Cash","Educational","Retirement Plan"];
 
+/* ---------- HMO (Hustles) constants ---------- */
+const HMO_COMPANIES = ["Philcare","Icare","Valucare","Pacific Cross","OONA"];
+const HMO_MODE_OPTIONS = ["Annual","Semi Annual","Quarterly"];
+const HMO_MODE_FREQ = { "Annual": 1, "Semi Annual": 2, "Quarterly": 4 };
+const HMO_ROOM_OPTIONS = ["Ward","Semi Private","Private"];
+/* Commission tracking for Hustles starts in production year 2025. */
+const HMO_RATE_YEARS = [2025,2026,2027,2028,2029,2030];
+
 /* ================= PRUFINATED — commission rate schedule =================
    Factory defaults are sourced from commission_table_for_pru.xlsx
    ("MONTHLY COMMISSION RATES") and only cover production year 2026.
@@ -1683,6 +1693,24 @@ const TABLE_LEAVES = {
       { key: "contactLink", label: "Contact Link", type: "url", placeholder: "https://..." },
     ],
   },
+  "hmo-clients": {
+    columns: [
+      { key: "name",          label: "Name of Client",   type: "text",   placeholder: "Last, First" },
+      { key: "submitted",     label: "Effectivity Date", type: "date" },
+      { key: "hmo",           label: "HMO Company",      type: "select", options: HMO_COMPANIES },
+      { key: "mode",          label: "Mode",              type: "select", options: HMO_MODE_OPTIONS },
+      { key: "roomType",      label: "Room Type",         type: "select", options: HMO_ROOM_OPTIONS },
+      { key: "premium",       label: "Premium",           type: "currency" },
+      { key: "ape",           label: "APE",               type: "currency" },
+      { key: "status",        label: "Status",            type: "select", options: ["Active","Inactive"] },
+      { key: "inactiveSince", label: "Inactive Since (Month)", type: "month" },
+    ],
+    totalKeys: ["premium","ape"],
+    legend: [
+      ["APE", "Annualized Premium Equivalent"],
+      ["Inactive Since", "Only relevant when Status is Inactive — the month coverage stopped. Used by the Commissions tab to stop tracking payments after this point."],
+    ],
+  },
 };
 
 const SEED_DATA = {
@@ -1850,6 +1878,11 @@ function fmtCurrency(n){
 function contactHref(value){
   return /^https?:\/\//i.test(String(value || '')) ? String(value) : '';
 }
+function fmtMonthValue(value){
+  const m = /^(\d{4})-(\d{2})$/.exec(String(value || ''));
+  if(!m) return '';
+  return `${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
+}
 
 /* -- generic form panel builder -- */
 function buildGenericPanel(item, groupLabel){
@@ -1914,6 +1947,13 @@ function buildTablePanel(item, groupLabel, config){
         <div>
           <label>${col.label}</label>
           <input id="${item.id}-f-${col.key}" type="date">
+        </div>`;
+    }
+    if(col.type === 'month'){
+      return `
+        <div>
+          <label>${col.label}</label>
+          <input id="${item.id}-f-${col.key}" type="month">
         </div>`;
     }
     if(col.type === 'select'){
@@ -3074,6 +3114,263 @@ function closeClientFypModal(){
   if(modal) modal.classList.remove('open');
 }
 
+/* ==================== HMO COMMISSIONS (Hustles) ====================
+   A per-company payment tracker for hmo-clients: each company has its own
+   table of clients, one column per calendar month, and a checkbox on any
+   month that lands on that client's payment schedule (derived from their
+   Effectivity Date + Mode). Ticking a box marks that installment's
+   commission as received. Rates are a single flat percent per company,
+   editable in the "Commission Rate Schedule" tab above the tables. */
+let hmoActiveCompany = HMO_COMPANIES[0];
+let hmoViewYear = Math.max(new Date().getFullYear(), HMO_RATE_YEARS[0]);
+let hmoSortMode = 'name-asc';
+
+function hmoClientKey(row){
+  return 'nm:' + String(row.name || '').trim().toLowerCase() + '|' + String(row.submitted || '').trim() + '|' + String(row.hmo || '').trim();
+}
+/* Every calendar month (0-11) in `year` on which a commission-bearing
+   payment is scheduled, given the client's Effectivity Date and Mode —
+   starting at the effectivity month and repeating every (12 / frequency)
+   months. Nothing is scheduled before the effectivity date, and nothing
+   after the month the client went Inactive (if any). */
+function hmoScheduleMonths(row, year){
+  const freq = HMO_MODE_FREQ[row.mode];
+  const effDate = /^\d{4}-\d{2}-\d{2}$/.test(String(row.submitted || '')) ? new Date(row.submitted + 'T00:00:00') : null;
+  if(!freq || !effDate || isNaN(effDate.getTime())) return [];
+  const stepMonths = 12 / freq;
+  const effTotal = effDate.getFullYear() * 12 + effDate.getMonth();
+  let cutoffTotal = Infinity;
+  if(String(row.status || '').toLowerCase() === 'inactive' && /^\d{4}-\d{2}$/.test(String(row.inactiveSince || ''))){
+    const [iy, im] = row.inactiveSince.split('-').map(Number);
+    cutoffTotal = iy * 12 + (im - 1);
+  }
+  const months = [];
+  for(let m = 0; m < 12; m++){
+    const total = year * 12 + m;
+    if(total < effTotal || total > cutoffTotal) continue;
+    if((total - effTotal) % stepMonths === 0) months.push(m);
+  }
+  return months;
+}
+function hmoScheduleLabel(row, year){
+  const months = hmoScheduleMonths(row, year);
+  return months.length ? months.map(m => MONTHS[m].slice(0,3)).join(', ') : (HMO_MODE_FREQ[row.mode] ? '—' : 'Set Mode & Effectivity Date');
+}
+function hmoRateFor(overrides, company){
+  const found = (overrides || []).find(o => o.company === company);
+  return found ? found.rate : 0;
+}
+
+function buildHmoCommissionsPanel(item, groupLabel){
+  const el = document.createElement('div');
+  el.className = 'leaf-view';
+  el.id = 'leaf-' + item.id;
+  el.innerHTML = `
+    <button class="back-link" onclick="backToGrid()">← ${groupLabel}</button>
+    <h1>${item.label}</h1>
+    <div class="sub">${groupLabel} · commission rates and a monthly payment tracker, by HMO company</div>
+
+    <div class="rewards-section">
+      <h2>Commission Rate Schedule</h2>
+      <div class="rs-sub">Set the flat commission rate for each HMO company — applied to the Premium of every scheduled payment.</div>
+      <div id="hmo-rate-editor"></div>
+    </div>
+
+    <div class="rewards-section">
+      <div class="prufin-controls-row">
+        <label class="prufin-controls-label">Year
+          <select id="hmo-year-select" onchange="onHmoYearChange()">
+            ${HMO_RATE_YEARS.map(y => `<option value="${y}" ${y === hmoViewYear ? 'selected' : ''}>${y}</option>`).join('')}
+          </select>
+        </label>
+        <label class="prufin-controls-label">Sort by
+          <select id="hmo-sort-select" onchange="onHmoSortChange()">
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="date-asc">Effectivity date</option>
+            <option value="status-asc">By Status</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div id="hmo-highlights"></div>
+
+    <div class="prufin-year-tabs" id="hmo-company-tabs"></div>
+    <div id="hmo-company-mount"></div>
+  `;
+  return el;
+}
+
+async function onHmoYearChange(){
+  const select = document.getElementById('hmo-year-select');
+  if(select) hmoViewYear = Number(select.value);
+  await renderHmoCommissionsPanel();
+}
+async function onHmoSortChange(){
+  const select = document.getElementById('hmo-sort-select');
+  if(select) hmoSortMode = select.value;
+  await renderHmoCommissionsPanel();
+}
+async function selectHmoCompany(company){
+  hmoActiveCompany = company;
+  await renderHmoCommissionsPanel();
+}
+
+/* ---- Commission Rate Schedule editor (one flat rate per company) ---- */
+async function renderHmoRateEditor(){
+  const mount = document.getElementById('hmo-rate-editor');
+  if(!mount) return;
+  const overrides = await getEntries('hmo-rate-overrides');
+  mount.innerHTML = `
+    <div class="prufin-rate-grid" style="grid-template-columns:repeat(${HMO_COMPANIES.length},1fr);">
+      ${HMO_COMPANIES.map(c => `<label>${c}<input type="number" step="0.01" id="hmo-rate-${c.replace(/\s+/g,'_')}" value="${(hmoRateFor(overrides, c) * 100) || ''}" placeholder="%"></label>`).join('')}
+    </div>
+    <div class="form-actions" style="margin-top:10px;">
+      <button class="primary" onclick="saveHmoRates()">Save Rates</button>
+    </div>
+    <div class="save-note" id="hmo-rate-savenote"></div>
+  `;
+}
+async function saveHmoRates(){
+  const overrides = HMO_COMPANIES.map(c => {
+    const v = parseFloat(document.getElementById('hmo-rate-' + c.replace(/\s+/g,'_')).value);
+    return { company: c, rate: isNaN(v) ? 0 : v / 100 };
+  });
+  const ok = await saveEntries('hmo-rate-overrides', overrides);
+  const note = document.getElementById('hmo-rate-savenote');
+  if(note) note.textContent = ok ? 'Saved.' : 'Could not save — please try again.';
+  await renderHmoCommissionsPanel();
+}
+
+/* ---- Highlights + per-company tables ---- */
+async function renderHmoHighlights(clients, overrides, tracker){
+  const mount = document.getElementById('hmo-highlights');
+  if(!mount) return;
+  const today = new Date();
+  const asOfIdx = hmoViewYear < today.getFullYear() ? 11
+    : hmoViewYear > today.getFullYear() ? -1
+    : today.getMonth();
+  let ytdTotal = 0, ytdReceived = 0;
+  clients.forEach(row => {
+    const rate = hmoRateFor(overrides, row.hmo);
+    const amount = parseCurrency(row.premium) * rate;
+    hmoScheduleMonths(row, hmoViewYear).forEach(m => {
+      if(m > asOfIdx) return;
+      ytdTotal += amount;
+      const paid = tracker.some(t => t.clientKey === hmoClientKey(row) && t.year === hmoViewYear && t.monthIndex === m);
+      if(paid) ytdReceived += amount;
+    });
+  });
+  const ytdToGo = ytdTotal - ytdReceived;
+  mount.innerHTML = `
+    <div class="prufin-highlight-grid">
+      <div class="prufin-highlight-box">
+        <div class="phb-label">YTD Total Commissions</div>
+        <div class="phb-value">${fmtCurrency(ytdTotal)}</div>
+      </div>
+      <div class="prufin-highlight-box">
+        <div class="phb-label">YTD Received Commissions</div>
+        <div class="phb-value">${fmtCurrency(ytdReceived)}</div>
+      </div>
+      <div class="prufin-highlight-box">
+        <div class="phb-label">YTD Commissions To-Go</div>
+        <div class="phb-value">${fmtCurrency(ytdToGo)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderHmoCompanyTabs(){
+  const mount = document.getElementById('hmo-company-tabs');
+  if(!mount) return;
+  mount.innerHTML = HMO_COMPANIES.map(c => `
+    <button class="prufin-year-tab ${c === hmoActiveCompany ? 'active' : ''}" onclick="selectHmoCompany('${prufinJsStr(c)}')">${escapeHtml(c)}</button>
+  `).join('');
+}
+
+async function toggleHmoPayment(clientKey, monthIndex, checked){
+  const tracker = await getEntries('hmo-payment-tracker');
+  const filtered = tracker.filter(t => !(t.clientKey === clientKey && t.year === hmoViewYear && t.monthIndex === monthIndex));
+  if(checked) filtered.push({ clientKey, year: hmoViewYear, monthIndex });
+  await saveEntries('hmo-payment-tracker', filtered);
+  await renderHmoCommissionsPanel();
+}
+
+async function renderHmoCompanyTable(clients, overrides, tracker){
+  const mount = document.getElementById('hmo-company-mount');
+  if(!mount) return;
+  const companyClients = clients.filter(row => (row.hmo || '') === hmoActiveCompany);
+  const sorted = [...companyClients].sort((a, b) => {
+    if(hmoSortMode === 'date-asc'){
+      const aT = a.submitted ? new Date(a.submitted).getTime() : 0;
+      const bT = b.submitted ? new Date(b.submitted).getTime() : 0;
+      return aT - bT;
+    }
+    if(hmoSortMode === 'status-asc') return (a.status || 'Active').localeCompare(b.status || 'Active');
+    return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
+  });
+  const rate = hmoRateFor(overrides, hmoActiveCompany);
+
+  if(!sorted.length){
+    mount.innerHTML = `<div class="rs-sub">No Issued clients yet for ${escapeHtml(hmoActiveCompany)}.</div>`;
+    return;
+  }
+
+  const rows = sorted.map(row => {
+    const key = hmoClientKey(row);
+    const scheduleMonths = new Set(hmoScheduleMonths(row, hmoViewYear));
+    const amount = parseCurrency(row.premium) * rate;
+    const monthCells = MONTHS.map((_, m) => {
+      if(!scheduleMonths.has(m)) return `<td class="prufin-na">—</td>`;
+      const paid = tracker.some(t => t.clientKey === key && t.year === hmoViewYear && t.monthIndex === m);
+      return `<td><input type="checkbox" ${paid ? 'checked' : ''} onchange="toggleHmoPayment('${prufinJsStr(key)}', ${m}, this.checked)" title="${fmtCurrency(amount)}"></td>`;
+    }).join('');
+    return `<tr>
+      <td style="text-align:left;"><span class="status-pill status-${(row.status || 'Active').replace(' ','\\ ')}">${escapeHtml(row.status || 'Active')}</span></td>
+      <td style="text-align:left;">${escapeHtml(row.name || '')}</td>
+      <td style="text-align:left;">${escapeHtml(fmtIssuedDate(row.submitted || ''))}</td>
+      <td style="text-align:left;">${escapeHtml(row.mode || '')}</td>
+      <td style="text-align:left;">${escapeHtml(hmoScheduleLabel(row, hmoViewYear))}</td>
+      ${monthCells}
+    </tr>`;
+  }).join('');
+
+  mount.innerHTML = `
+    <div class="rs-sub">Commission rate for ${escapeHtml(hmoActiveCompany)}: <strong>${prufinPct(rate)}</strong> of Premium per scheduled payment. Hover a checkbox to see its commission amount.</div>
+    <div class="statistics-table-wrap">
+      <table class="statistics-table prufin-tracker-table">
+        <thead><tr>
+          <th style="text-align:left;">Status</th>
+          <th style="text-align:left;">Name of Client</th>
+          <th style="text-align:left;">Effectivity Date</th>
+          <th style="text-align:left;">Mode</th>
+          <th style="text-align:left;">Schedule of Payments</th>
+          ${MONTHS.map(m => `<th>${m.slice(0,3)}</th>`).join('')}
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function renderHmoCommissionsPanel(){
+  if(!document.getElementById('hmo-highlights')) return;
+  const yearSelect = document.getElementById('hmo-year-select');
+  if(yearSelect) yearSelect.value = hmoViewYear;
+  const sortSelect = document.getElementById('hmo-sort-select');
+  if(sortSelect) sortSelect.value = hmoSortMode;
+
+  await renderHmoRateEditor();
+  renderHmoCompanyTabs();
+
+  const clients = await getEntries('hmo-clients');
+  const overrides = await getEntries('hmo-rate-overrides');
+  const tracker = await getEntries('hmo-payment-tracker');
+
+  await renderHmoHighlights(clients, overrides, tracker);
+  await renderHmoCompanyTable(clients, overrides, tracker);
+}
+
 /* -- live countdown to Jan 1, 2027, shown at the top of Rewards & Achievements -- */
 let yearCountdownTimer = null;
 function startYearCountdown(){
@@ -3290,6 +3587,8 @@ GROUPS.forEach(g => {
       panel = buildRewardsPanel(item, g.label);
     }else if(item.id === 'prufin'){
       panel = buildPrufinPanel(item, g.label);
+    }else if(item.id === 'hmo-commissions'){
+      panel = buildHmoCommissionsPanel(item, g.label);
     }else if(item.id === 'whats-next'){
       panel = document.createElement('div');
       panel.className = 'leaf-view';
@@ -3493,6 +3792,8 @@ function backToGrid(){
 async function renderList(id){
   if(id === 'whats-next') return;
   if(id === 'pru-servicing') return renderServicingTable(id);
+  if(id === 'prufin') return renderPrufinPanel();
+  if(id === 'hmo-commissions') return renderHmoCommissionsPanel();
   if(TABLE_LEAVES[id] && TABLE_LEAVES[id].lead){
     return renderLeadTable(id);
   }
@@ -3902,7 +4203,21 @@ async function renderTable(id){
       totals[k] += (col && col.type === 'computed') ? clientFYP(row, fypAsOfDate) : parseCurrency(row[k]);
     });
   });
-  if(totalsEl){
+  if(totalsEl && id === 'hmo-clients'){
+    const activeEntries = allEntries.filter(row => String(row.status || 'Active').toLowerCase() !== 'inactive');
+    const inactiveEntries = allEntries.filter(row => String(row.status || '').toLowerCase() === 'inactive');
+    const sumRows = (rows, key) => rows.reduce((sum, row) => sum + parseCurrency(row[key]), 0);
+    totalsEl.innerHTML = `
+      <div class="client-metrics">
+        <div class="client-metrics-primary">
+          <div class="client-metric"><div class="client-metric-label">Total Clients</div><div class="client-metric-value">${allEntries.length}</div></div>
+          <div class="client-metric"><div class="client-metric-label">Active Clients</div><div class="client-metric-value">${activeEntries.length}</div></div>
+          <div class="client-metric"><div class="client-metric-label">Inactive Clients</div><div class="client-metric-value">${inactiveEntries.length}</div></div>
+          <div class="client-metric"><div class="client-metric-label">Total Premium</div><div class="client-metric-value">${fmtCurrency(sumRows(allEntries, 'premium'))}</div></div>
+          <div class="client-metric"><div class="client-metric-label">Total APE</div><div class="client-metric-value">${fmtCurrency(sumRows(allEntries, 'ape'))}</div></div>
+        </div>
+      </div>`;
+  }else if(totalsEl && id === 'pru-clients'){
     const today = new Date();
     const currentYear = today.getFullYear();
     const issuedEntries = allEntries.filter(row => !row.status || String(row.status).toLowerCase() === 'issued');
@@ -3959,6 +4274,7 @@ async function renderTable(id){
     listEl.innerHTML = `<div class="empty">No entries yet — add your first client above.</div>`;
     await renderGroupCount(idToGroup(id));
     if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); if(prufinStatsOpen) await renderPrufinStatisticsPanel(); }
+    if(id === 'hmo-clients'){ await renderHmoCommissionsPanel(); }
     return;
   }
 
@@ -4008,6 +4324,9 @@ async function renderTable(id){
       if(c.type === 'date'){
         return `<td>${escapeHtml(fmtIssuedDate(v || ''))}</td>`;
       }
+      if(c.type === 'month'){
+        return `<td>${escapeHtml(fmtMonthValue(v || ''))}</td>`;
+      }
       if(c.type === 'url'){
         const href = contactHref(v);
         return `<td>${href ? `<a class="contact-link" href="${escapeHtml(href)}" target="_blank" rel="noopener">Open Link</a>` : ''}</td>`;
@@ -4030,6 +4349,7 @@ async function renderTable(id){
   `;
   await renderGroupCount(idToGroup(id));
   if(id === 'pru-clients'){ await renderRewardsPanel(); await renderPrufinPanel(); if(prufinStatsOpen) await renderPrufinStatisticsPanel(); }
+  if(id === 'hmo-clients'){ await renderHmoCommissionsPanel(); }
 }
 
 function idToGroup(leafId){
