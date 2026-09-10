@@ -1145,6 +1145,100 @@
     .sidebar .today-badge{padding-left:0;}
     main{padding:26px 14px 44px;}
   }
+
+  /* ---------- Post-login layout: no sidebar, just a centered top nav
+     and a single "Sign out" control in the top-right corner. ---------- */
+  body{ display:block; }
+  #app-shell.hidden{ display:none; }
+  #app-shell{ display:block; width:100%; min-height:100vh; position:relative; }
+  main.main-centered{
+    max-width:1600px;
+    width:100%;
+    margin:0 auto;
+    padding:56px clamp(18px,5vw,56px) 42px;
+  }
+  #group-nav.center-nav{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:8px;
+    margin:0 0 36px;
+  }
+  #group-nav.center-nav .nav-item{
+    all:unset;
+    cursor:pointer;
+    width:auto;
+    padding:11px 22px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:#fff;
+    border:1px solid var(--line);
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  #group-nav.center-nav .nav-item:hover{ border-color:var(--brass); color:var(--ink); }
+  #group-nav.center-nav .nav-item.active{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#fff;
+    box-shadow:0 8px 18px rgba(38,38,36,.18);
+  }
+  #group-nav.center-nav .nav-item .count{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    background:rgba(0,0,0,.05);
+    padding:1px 7px;
+    border-radius:100px;
+  }
+  #group-nav.center-nav .nav-item.active .count{ color:#fff; background:rgba(255,255,255,.22); }
+  h1#group-title{ text-align:center; }
+  .sub#group-sub{ text-align:center; }
+
+  .corner-signout{
+    all:unset;
+    cursor:pointer;
+    position:fixed;
+    top:18px;
+    right:22px;
+    z-index:10;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:#fff;
+    border:1px solid var(--line);
+    padding:8px 16px;
+    border-radius:999px;
+    box-shadow:0 4px 14px rgba(23,35,49,.08);
+  }
+  .corner-signout:hover{ color:var(--red); border-color:var(--red); }
+
+  .corner-trash{
+    all:unset;
+    cursor:pointer;
+    position:fixed;
+    bottom:18px;
+    right:22px;
+    z-index:10;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:#fff;
+    border:1px solid var(--line);
+    padding:7px 14px;
+    border-radius:999px;
+    box-shadow:0 4px 14px rgba(23,35,49,.08);
+  }
+  .corner-trash:hover{ color:var(--brass); border-color:var(--brass); }
+
+  @media (max-width:560px){
+    main.main-centered{ padding:64px 14px 60px; }
+    .corner-signout{ top:12px; right:12px; padding:7px 13px; }
+    .corner-trash{ bottom:12px; right:12px; }
+  }
 </style>
 </head>
 <body>
@@ -1169,16 +1263,11 @@
 </div>
 
 <div id="app-shell" class="hidden" style="width:100%;">
-  <div class="sidebar" style="display:flex; flex-direction:column;">
-    <div class="brand">Bam<span>Personal dashboard</span></div>
-    <div class="today-badge" id="today-badge"></div>
-    <div id="group-nav"></div>
-    <div class="sidebar-user" id="sidebar-user"></div>
-    <button class="signout-link" id="signout-btn">Sign out</button>
-    <button class="trash-button" id="trash-btn" onclick="openTrash()">Trash</button>
-  </div>
+  <button class="corner-signout" id="signout-btn">Sign out</button>
 
-  <main>
+  <main class="main-centered">
+    <div id="group-nav" class="center-nav"></div>
+
     <h1 id="group-title">Pru</h1>
     <div class="sub" id="group-sub">Tap a section to open it.</div>
 
@@ -1187,6 +1276,8 @@
     <div id="statistics-mount" class="statistics-view"></div>
     <div id="prufin-statistics-mount" class="statistics-view"></div>
   </main>
+
+  <button class="corner-trash" id="trash-btn" onclick="openTrash()">Trash</button>
 </div>
 <div class="trash-modal" id="trash-modal" role="dialog" aria-modal="true" aria-labelledby="trash-title">
   <div class="trash-dialog">
