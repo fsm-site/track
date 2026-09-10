@@ -831,7 +831,6 @@
   .signout-link{color:#91a3ac; padding:12px 10px 0;}
   .signout-link:hover{color:#fff;}
   main{padding:42px clamp(24px,5vw,74px); max-width:1600px;}
-  main::before{content:'PRU LIFE UK'; display:block; color:var(--brass); font-size:10px; font-weight:700; letter-spacing:1.8px; margin-bottom:10px;}
   h1{font-size:31px; letter-spacing:-.9px; color:var(--navy);}
   .sub{font-size:13px; margin-bottom:30px; color:var(--ink-soft);}
   .box-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px;}
@@ -1198,6 +1197,28 @@
   h1#group-title{ text-align:center; }
   .sub#group-sub{ text-align:center; }
 
+  /* soft pop-in for the main nav buttons, played once on the home screen */
+  @keyframes navPopIn{
+    from{ opacity:0; transform:translateY(10px) scale(.92); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  #group-nav.center-nav.pop-in .nav-item{
+    opacity:0;
+    animation:navPopIn .5s cubic-bezier(.2,.8,.3,1) forwards;
+  }
+  #group-nav.center-nav.pop-in .nav-item:nth-child(1){ animation-delay:.05s; }
+  #group-nav.center-nav.pop-in .nav-item:nth-child(2){ animation-delay:.12s; }
+  #group-nav.center-nav.pop-in .nav-item:nth-child(3){ animation-delay:.19s; }
+  #group-nav.center-nav.pop-in .nav-item:nth-child(4){ animation-delay:.26s; }
+  #group-nav.center-nav.pop-in .nav-item:nth-child(5){ animation-delay:.33s; }
+
+  /* smooth "next page" transition when switching into a group's view */
+  @keyframes viewFadeIn{
+    from{ opacity:0; transform:translateY(16px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .view-enter{ animation:viewFadeIn .45s cubic-bezier(.2,.8,.3,1) both; }
+
   .home-panel{
     display:none;
     flex-direction:column;
@@ -1212,6 +1233,10 @@
     font-weight:700;
     color:var(--navy);
     letter-spacing:-.4px;
+  }
+  .home-panel.pop-in .home-question{
+    opacity:0;
+    animation:viewFadeIn .55s cubic-bezier(.2,.8,.3,1) forwards;
   }
 
   .corner-signout{
@@ -4165,6 +4190,15 @@ function renderView(){
   }
 }
 
+// Restarts the "view-enter" CSS animation on an element even if it already
+// has the class, by removing it, forcing a reflow, then re-adding it.
+function playEnterAnimation(el){
+  if(!el) return;
+  el.classList.remove('view-enter');
+  void el.offsetWidth;
+  el.classList.add('view-enter');
+}
+
 function selectGroup(groupId){
   activeGroup = groupId;
   activeLeaf = null;
@@ -4173,6 +4207,9 @@ function selectGroup(groupId){
   renderGroupNav();
   renderBoxGrid();
   renderView();
+  playEnterAnimation(document.getElementById('group-title'));
+  playEnterAnimation(document.getElementById('group-sub'));
+  playEnterAnimation(boxGrid);
 }
 
 function selectLeaf(groupId, leafId){
@@ -4182,6 +4219,8 @@ function selectLeaf(groupId, leafId){
   saveViewState();
   renderGroupNav();
   renderView();
+  const leafEl = document.getElementById('leaf-' + leafId);
+  playEnterAnimation(leafEl);
 }
 
 function backToGrid(){
@@ -4190,6 +4229,9 @@ function backToGrid(){
   saveViewState();
   renderBoxGrid();
   renderView();
+  playEnterAnimation(document.getElementById('group-title'));
+  playEnterAnimation(document.getElementById('group-sub'));
+  playEnterAnimation(boxGrid);
 }
 
 /* ---------- rendering: generic list ---------- */
@@ -5136,6 +5178,16 @@ window.initApp = async function initApp(){
   renderGroupNav();
   renderBoxGrid();
   renderView();
+  if(activeGroup === null){
+    const nav = document.getElementById('group-nav');
+    const home = document.getElementById('home-panel');
+    if(nav) nav.classList.add('pop-in');
+    if(home) home.classList.add('pop-in');
+    setTimeout(() => {
+      if(nav) nav.classList.remove('pop-in');
+      if(home) home.classList.remove('pop-in');
+    }, 900);
+  }
   await primeCache();
   await Promise.all(allLeafIds().map(id => renderList(id)));
   await renderAllCounts();
