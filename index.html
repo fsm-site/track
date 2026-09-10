@@ -36,6 +36,7 @@
     display:flex;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
   }
   .sidebar{
     width:210px;
@@ -1212,12 +1213,17 @@
   #group-nav.center-nav.pop-in .nav-item:nth-child(4){ animation-delay:.26s; }
   #group-nav.center-nav.pop-in .nav-item:nth-child(5){ animation-delay:.33s; }
 
-  /* smooth "next page" transition when switching into a group's view */
+  /* smooth "next page" transition when switching into a group's view —
+     slides the new screen in from the right, like a mobile app page push */
   @keyframes viewFadeIn{
     from{ opacity:0; transform:translateY(16px); }
     to{ opacity:1; transform:translateY(0); }
   }
-  .view-enter{ animation:viewFadeIn .45s cubic-bezier(.2,.8,.3,1) both; }
+  @keyframes viewPushIn{
+    from{ opacity:0; transform:translateX(56px); }
+    to{ opacity:1; transform:translateX(0); }
+  }
+  .view-enter{ animation:viewPushIn .42s cubic-bezier(.16,.84,.32,1) both; }
 
   .home-panel{
     display:none;
