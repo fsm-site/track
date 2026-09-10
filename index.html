@@ -1198,6 +1198,22 @@
   h1#group-title{ text-align:center; }
   .sub#group-sub{ text-align:center; }
 
+  .home-panel{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:70px 20px 40px;
+  }
+  .home-panel .home-question{
+    font-family:'Montserrat',sans-serif;
+    font-size:clamp(22px,3.2vw,34px);
+    font-weight:700;
+    color:var(--navy);
+    letter-spacing:-.4px;
+  }
+
   .corner-signout{
     all:unset;
     cursor:pointer;
@@ -1267,6 +1283,10 @@
 
   <main class="main-centered">
     <div id="group-nav" class="center-nav"></div>
+
+    <div id="home-panel" class="home-panel">
+      <div class="home-question">What are you up to today?</div>
+    </div>
 
     <h1 id="group-title">Pru</h1>
     <div class="sub" id="group-sub">Tap a section to open it.</div>
@@ -1843,7 +1863,7 @@ const MDRT_MEETINGS = [
 
 const editState = {}; // leaf id -> index currently being edited, or null
 
-let activeGroup = GROUPS[0].id;
+let activeGroup = null; // null = showing the "What are you up to today?" home screen
 let activeLeaf = null; // null = showing box grid for the active group
 let statisticsOpen = false;
 const VIEW_STATE_KEY = 'bams-masterlist-view';
@@ -1919,6 +1939,12 @@ const groupSub = document.getElementById('group-sub');
 
 function renderBoxGrid(){
   const group = GROUPS.find(g => g.id === activeGroup);
+  if(!group){
+    groupTitle.textContent = '';
+    groupSub.textContent = '';
+    boxGrid.innerHTML = '';
+    return;
+  }
   groupTitle.textContent = group.label;
   groupSub.textContent = group.id === 'sites' ? 'Tap a link to open it in a new tab.' : 'Tap a section to open it.';
   boxGrid.innerHTML = group.items.map(item => {
@@ -4095,6 +4121,18 @@ function closeStatistics(){
 
 /* ---------- view switching ---------- */
 function renderView(){
+  const homePanel = document.getElementById('home-panel');
+  if(activeGroup === null){
+    if(homePanel) homePanel.style.display = 'flex';
+    boxGrid.style.display = 'none';
+    document.getElementById('group-title').style.display = 'none';
+    document.getElementById('group-sub').style.display = 'none';
+    document.querySelectorAll('.leaf-view').forEach(p => p.classList.remove('visible'));
+    statisticsMount.classList.remove('visible');
+    if(prufinStatisticsMount) prufinStatisticsMount.classList.remove('visible');
+    return;
+  }
+  if(homePanel) homePanel.style.display = 'none';
   if(prufinStatsOpen && (activeGroup !== 'pru' || activeLeaf !== 'prufin')){
     prufinStatsOpen = false;
   }
